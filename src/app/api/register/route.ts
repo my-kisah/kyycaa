@@ -59,9 +59,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error("Register route failed", error);
     return NextResponse.json(
-      { error: "Terjadi kesalahan saat membuat akun." },
+      {
+        error:
+          process.env.NODE_ENV === "development" && error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat membuat akun.",
+      },
       { status: 500 },
     );
   }
