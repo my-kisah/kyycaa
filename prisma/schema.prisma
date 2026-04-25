@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ActivityStatus {
+  ACTIVE
+  HIDDEN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  username      String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(USER)
+  bannedAt      DateTime?
+  banReason     String?
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  comments      Comment[]
+  activities    Activity[]
+  views         View[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Activity {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  excerpt       String
+  description   String
+  imageUrl      String
+  imagePath     String
+  date          DateTime
+  category      String
+  tags          String
+  status        ActivityStatus @default(ACTIVE)
+  views         Int            @default(0)
+  commentsCount Int            @default(0)
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  comments      Comment[]
+  viewEntries   View[]
+
+  @@index([status, date])
+  @@index([views])
+  @@index([commentsCount])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  contentId   String
+  userId      String
+  userName    String
+  userPhoto   String?
+  commentText String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  content     Activity @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([contentId, createdAt])
+}
+
+model View {
+  id         String   @id @default(cuid())
+  contentId  String
+  userId     String?
+  visitorKey String
+  bucket     String
+  createdAt  DateTime @default(now())
+  content    Activity @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([contentId, visitorKey, bucket])
+  @@index([contentId, createdAt])
+}

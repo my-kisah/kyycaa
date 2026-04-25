@@ -1,0 +1,118 @@
+"use client";
+
+import Link from "next/link";
+import { useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
+import { getLoginGuardMessageAction } from "@/actions/auth-actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { loginSchema } from "@/lib/validators";
+
+type LoginValues = {
+  identifier: string;
+  password: string;
+  portal: "user" | "admin";
+};
+
+export function LoginForm({
+  portal,
+  callbackUrl,
+}: {
+  portal: "user" | "admin";
+  callbackUrl?: string;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [serverError, setServerError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      identifier: "",
+      password: "",
+      portal,
+    },
+  });
+
+  async function onSubmit(values: LoginValues) {
+    setServerError("");
+    startTransition(async () => {
+      const result = await signIn("credentials", {
+        identifier: values.identifier,
+        password: values.password,
+        portal,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        const guardMessage = await getLoginGuardMessageAction({
+          identifier: values.identifier,
+          portal,
+        });
+
+        setServerError(
+          guardMessage.error ??
+            (portal === "admin"
+              ? "Login admin gagal. Pastikan email admin dan password benar."
+              : "Login gagal. Periksa email atau username dan password Anda."),
+        );
+        return;
+      }
+
+      toast.success("Login berhasil.");
+      window.location.href =
+        callbackUrl ?? (portal === "admin" ? "/admin" : "/dashboard");
+    });
+  }
+
+  return (
+    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-rose-900">
+          {portal === "admin" ? "Email admin" : "Email atau username"}
+        </label>
+        <Input
+          type="text"
+          placeholder={portal === "admin" ? "admin@email.com" : "nama@email.com atau username"}
+          autoComplete="username"
+          error={errors.identifier?.message}
+          {...register("identifier")}
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-rose-900">Password</label>
+        <Input
+          type="password"
+          placeholder="Masukkan password"
+          autoComplete="current-password"
+          error={errors.password?.message}
+          {...register("password")}
+        />
+      </div>
+      {serverError ? <p className="text-sm text-rose-600">{serverError}</p> : null}
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? "Memproses..." : portal === "admin" ? "Masuk sebagai Admin" : "Login"}
+      </Button>
+
+      {portal === "user" ? (
+        <>
+          <p className="text-center text-sm text-rose-700/80">
+            Belum punya akun?{" "}
+            <Link href="/register" className="font-semibold text-rose-600">
+              Register di sini
+            </Link>
+          </p>
+        </>
+      ) : (
+        <p className="text-center text-sm text-rose-700/80">
+          Halaman ini khusus akun admin yang dibuat pemilik website.
+        </p>
+      )}
+    </form>
+  );
+}
