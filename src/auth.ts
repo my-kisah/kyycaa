@@ -91,12 +91,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!existingUser) return false;
         if (existingUser.role === Role.USER && existingUser.bannedAt) return false;
 
-        await prisma.user.update({
-          where: { email },
-          data: {
-            lastLoginAt: new Date(),
-          },
-        });
+        try {
+          await prisma.user.update({
+            where: { email },
+            data: {
+              lastLoginAt: new Date(),
+            },
+          });
+        } catch (error) {
+          console.warn("Skipping lastLoginAt update during sign in", error);
+        }
       }
 
       return true;
