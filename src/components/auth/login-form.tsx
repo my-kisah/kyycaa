@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +25,7 @@ export function LoginForm({
   portal: "user" | "admin";
   callbackUrl?: string;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState("");
   const {
@@ -39,13 +41,38 @@ export function LoginForm({
     },
   });
 
+  function getSafeRedirectTarget(target?: string) {
+    const adminFallback = "/admin";
+    const userFallback = "/dashboard";
+
+    if (!target || !target.startsWith("/")) {
+      return portal === "admin" ? adminFallback : userFallback;
+    }
+
+    if (portal === "admin") {
+      return target.startsWith("/admin") ? target : adminFallback;
+    }
+
+    if (target.startsWith("/admin")) {
+      return userFallback;
+    }
+
+    if (target === "/login" || target === "/register" || target === "/admin/login") {
+      return userFallback;
+    }
+
+    return target;
+  }
+
   async function onSubmit(values: LoginValues) {
     setServerError("");
     startTransition(async () => {
+      const redirectTarget = getSafeRedirectTarget(callbackUrl);
       const result = await signIn("credentials", {
         identifier: values.identifier,
         password: values.password,
         portal,
+        callbackUrl: redirectTarget,
         redirect: false,
       });
 
@@ -65,8 +92,8 @@ export function LoginForm({
       }
 
       toast.success("Login berhasil.");
-      window.location.href =
-        callbackUrl ?? (portal === "admin" ? "/admin" : "/dashboard");
+      router.replace(redirectTarget);
+      router.refresh();
     });
   }
 
