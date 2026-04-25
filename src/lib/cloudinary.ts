@@ -2,6 +2,18 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
+export function isCloudinaryConfigured() {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET,
+  );
+}
+
+export function isProductionDeployment() {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
 function getConfig() {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;

@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { isProductionDeployment } from "@/lib/cloudinary";
 
 const mimeExtensions: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -9,6 +10,12 @@ const mimeExtensions: Record<string, string> = {
 };
 
 export async function saveLocalProfileImage(file: File) {
+  if (isProductionDeployment()) {
+    throw new Error(
+      "Upload file lokal dimatikan di production. Aktifkan Cloudinary lebih dulu untuk upload foto profil.",
+    );
+  }
+
   const extension =
     mimeExtensions[file.type] ||
     path.extname(file.name || "").toLowerCase() ||

@@ -74,6 +74,23 @@ CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
 ```
 
+## Environment variable production di Vercel
+
+Isi variable ini di menu `Project Settings > Environment Variables` pada Vercel, lalu redeploy.
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
+AUTH_SECRET="secret-panjang-random-untuk-production"
+NEXT_PUBLIC_APP_URL="https://domain-anda.vercel.app"
+
+ADMIN_EMAILS="admin@email.com,owner@email.com"
+SEED_ADMIN_PASSWORD="PasswordAwalAdmin123!"
+
+CLOUDINARY_CLOUD_NAME="cloud-name-anda"
+CLOUDINARY_API_KEY="api-key-cloudinary"
+CLOUDINARY_API_SECRET="api-secret-cloudinary"
+```
+
 ## Setup lokal
 
 1. Install dependency
@@ -134,8 +151,65 @@ Catatan:
 
 ### Production
 
-- Anda bisa mengganti `SQLite` ke `PostgreSQL` atau layanan lain bila diperlukan
-- Storage gambar tetap menggunakan `Cloudinary`
+- `SQLite` hanya aman untuk development lokal
+- Untuk Vercel, gunakan `PostgreSQL` online seperti `Supabase` atau `Neon`
+- Storage gambar production wajib menggunakan `Cloudinary`
+- Upload file lokal hanya untuk development dan otomatis ditolak di production
+
+## Checklist go-live Vercel
+
+1. Pastikan source terbaru sudah ter-push ke GitHub.
+2. Di Vercel, isi semua `Environment Variables`.
+3. Gunakan `DATABASE_URL` PostgreSQL online.
+4. Aktifkan kredensial `Cloudinary` agar upload foto profil dan gambar konten tidak gagal.
+5. Redeploy project setelah env diubah. Vercel menerapkan env baru hanya untuk deployment berikutnya, bukan deployment lama. Sumber: [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
+6. Uji:
+   - login user
+   - login admin
+   - upload foto profil
+   - tambah konten bergambar
+   - komentar
+   - ban/hapus user
+
+## Cara menyiapkan PostgreSQL online
+
+### Opsi 1: Supabase
+
+- Buat project database baru di Supabase.
+- Ambil connection string Postgres dari dashboard database. Supabase menyediakan beberapa jenis connection string dan untuk aplikasi serverless gunakan string yang sesuai dengan kebutuhan koneksi Anda. Sumber: [Supabase connection strings](https://supabase.com/docs/reference/postgres/connection-strings)
+- Tempel nilainya ke `DATABASE_URL` di Vercel.
+
+### Opsi 2: Neon
+
+- Buat project database baru di Neon.
+- Salin connection string PostgreSQL dari dashboard Neon. Sumber: [Neon connection guide](https://neon.com/docs/get-started-with-neon/connect-neon)
+- Tempel ke `DATABASE_URL` di Vercel.
+
+Setelah database online siap:
+
+1. Ubah `DATABASE_URL` di Vercel ke connection string PostgreSQL.
+2. Jalankan sinkronisasi schema dari lokal:
+
+```bash
+npx prisma db push
+```
+
+3. Jika ingin data awal production, set env production yang benar lalu jalankan:
+
+```bash
+npm run prisma:seed
+```
+
+Catatan:
+- Schema Prisma saat ini masih memakai provider `sqlite`, jadi sebelum production database benar-benar dipakai, datasource perlu diubah ke `postgresql`.
+- Lakukan perubahan provider itu tepat saat Anda sudah memegang connection string PostgreSQL production, agar local dev dan production tidak saling bentrok.
+
+## Cara menyiapkan Cloudinary
+
+1. Buat akun Cloudinary.
+2. Ambil `cloud name`, `API key`, dan `API secret` dari dashboard / halaman API Keys Cloudinary. Sumber: [Cloudinary credentials](https://cloudinary.com/documentation/developer_onboarding_faq_find_credentials)
+3. Isi ketiga nilai itu di Vercel.
+4. Redeploy project.
 
 ## Data awal dari seed
 

@@ -6,7 +6,7 @@ import { signOut } from "@/auth";
 import { auth } from "@/auth";
 import { saveLocalProfileImage } from "@/lib/local-upload";
 import { prisma } from "@/lib/prisma";
-import { uploadImage } from "@/lib/cloudinary";
+import { isCloudinaryConfigured, isProductionDeployment, uploadImage } from "@/lib/cloudinary";
 import {
   adminBanSchema,
   adminCreateSchema,
@@ -72,21 +72,26 @@ export async function updateProfileAction(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     try {
-      const hasCloudinaryConfig =
-        Boolean(process.env.CLOUDINARY_CLOUD_NAME) &&
-        Boolean(process.env.CLOUDINARY_API_KEY) &&
-        Boolean(process.env.CLOUDINARY_API_SECRET);
-
-      if (hasCloudinaryConfig) {
+      if (isCloudinaryConfigured()) {
         const uploaded = await uploadImage(file, "cerita-kita/profiles");
         image = uploaded.secure_url;
+      } else if (isProductionDeployment()) {
+        return {
+          error:
+            "Upload foto profil di website online membutuhkan Cloudinary. Isi CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, dan CLOUDINARY_API_SECRET di Vercel.",
+        };
       } else {
         const uploaded = await saveLocalProfileImage(file);
         image = uploaded.imageUrl;
       }
     } catch (error) {
       console.error("Profile image upload failed", error);
-      return { error: "Upload foto profil gagal. Coba lagi setelah beberapa saat." };
+      return {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Upload foto profil gagal. Coba lagi setelah beberapa saat.",
+      };
     }
   }
 
