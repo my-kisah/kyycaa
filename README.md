@@ -187,22 +187,28 @@ Catatan:
 
 Setelah database online siap:
 
-1. Ubah `DATABASE_URL` di Vercel ke connection string PostgreSQL.
-2. Jalankan sinkronisasi schema dari lokal:
+1. Isi `DATABASE_URL` PostgreSQL di Vercel.
+2. Dari lokal, generate Prisma client untuk schema PostgreSQL:
 
 ```bash
-npx prisma db push
+npm run prisma:generate:postgres
 ```
 
-3. Jika ingin data awal production, set env production yang benar lalu jalankan:
+3. Sinkronkan schema ke database online:
 
 ```bash
-npm run prisma:seed
+npm run prisma:push:postgres
+```
+
+4. Jika ingin data awal production, set env production yang benar lalu jalankan:
+
+```bash
+npm run prisma:seed:production
 ```
 
 Catatan:
-- Schema Prisma saat ini masih memakai provider `sqlite`, jadi sebelum production database benar-benar dipakai, datasource perlu diubah ke `postgresql`.
-- Lakukan perubahan provider itu tepat saat Anda sudah memegang connection string PostgreSQL production, agar local dev dan production tidak saling bentrok.
+- Development lokal tetap memakai [schema.prisma](</D:/projeck me/web bucin/prisma/schema.prisma>) dengan `sqlite`.
+- Production PostgreSQL memakai [schema.postgres.prisma](</D:/projeck me/web bucin/prisma/schema.postgres.prisma>) agar local dev dan production tidak saling bentrok.
 
 ## Cara menyiapkan Cloudinary
 
