@@ -4,9 +4,8 @@ import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { signOut } from "@/auth";
 import { auth } from "@/auth";
-import { saveLocalProfileImage } from "@/lib/local-upload";
 import { prisma } from "@/lib/prisma";
-import { isCloudinaryConfigured, isProductionDeployment, uploadImage } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/cloudinary";
 import {
   adminBanSchema,
   adminCreateSchema,
@@ -72,18 +71,8 @@ export async function updateProfileAction(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     try {
-      if (isCloudinaryConfigured()) {
-        const uploaded = await uploadImage(file, "cerita-kita/profiles");
-        image = uploaded.secure_url;
-      } else if (isProductionDeployment()) {
-        return {
-          error:
-            "Upload foto profil di website online membutuhkan Cloudinary. Isi CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, dan CLOUDINARY_API_SECRET di Vercel.",
-        };
-      } else {
-        const uploaded = await saveLocalProfileImage(file);
-        image = uploaded.imageUrl;
-      }
+      const uploaded = await uploadImage(file, "cerita-kita/profiles");
+      image = uploaded.secure_url;
     } catch (error) {
       console.error("Profile image upload failed", error);
       return {
