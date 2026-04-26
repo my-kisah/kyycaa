@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Eye, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { formatCompactNumber, formatDate } from "@/lib/utils";
 
 type ActivityCardProps = {
@@ -24,10 +24,11 @@ export function ActivityCard({ activity, adminMode = false }: ActivityCardProps)
   return (
     <article className="animated-shell hover-glow group overflow-hidden rounded-[30px] border border-white/60 bg-white/72 shadow-[0_24px_60px_rgba(206,140,170,0.13)] backdrop-blur-xl transition duration-500 hover:-translate-y-1.5">
       <div className="relative h-64 overflow-hidden">
-        <Image
+        <FlexibleImage
           src={activity.imageUrl}
           alt={activity.title}
           fill
+          loading="eager"
           className="object-cover transition duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-rose-950/25 via-transparent to-transparent" />

@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { deleteImage, uploadImage } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/utils";
-import { activitySchema, validateImageFile } from "@/lib/validators";
+import { activitySchema, validateImageFile, validateImageUrl } from "@/lib/validators";
 
 async function requireAdmin() {
   const session = await auth();
@@ -31,6 +31,7 @@ export async function saveActivityAction(formData: FormData) {
       category: String(formData.get("category") ?? ""),
       tags: String(formData.get("tags") ?? ""),
       status: String(formData.get("status") ?? "ACTIVE"),
+      externalImageUrl: String(formData.get("imageUrl") ?? "").trim(),
     };
 
     const parsed = activitySchema.safeParse(raw);
@@ -44,19 +45,33 @@ export async function saveActivityAction(formData: FormData) {
       return { error: fileError };
     }
 
+    const externalImageUrl = raw.externalImageUrl;
+    const imageUrlError = validateImageUrl(externalImageUrl);
+    if (imageUrlError) {
+      return { error: imageUrlError };
+    }
+
     const activityId = parsed.data.id || undefined;
     const existing = activityId
       ? await prisma.activity.findUnique({ where: { id: activityId } })
       : null;
 
-    if (!existing && (!file || file.size === 0)) {
-      return { error: "Gambar wajib diunggah untuk konten baru." };
+    if (!existing && (!file || file.size === 0) && !externalImageUrl) {
+      return { error: "Pilih upload file atau isi link gambar untuk konten baru." };
     }
 
     let imageUrl = existing?.imageUrl;
     let imagePath = existing?.imagePath;
 
-    if (file && file.size > 0) {
+    if (externalImageUrl) {
+      imageUrl = externalImageUrl;
+
+      if (existing?.imagePath) {
+        await deleteImage(existing.imagePath);
+      }
+
+      imagePath = "";
+    } else if (file && file.size > 0) {
       const uploaded = await uploadImage(file);
       imageUrl = uploaded.secure_url;
       imagePath = uploaded.public_id;

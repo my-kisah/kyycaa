@@ -1,7 +1,7 @@
-import Image from "next/image";
 import { auth } from "@/auth";
 import { deleteCommentByPayloadAction } from "@/actions/comment-actions";
 import { ConfirmDialogButton } from "@/components/ui/confirm-dialog-button";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { getInitials } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
@@ -38,7 +38,7 @@ export async function CommentList({
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 {comment.userPhoto ? (
-                  <Image
+                  <FlexibleImage
                     src={comment.userPhoto}
                     alt={comment.userName}
                     width={48}

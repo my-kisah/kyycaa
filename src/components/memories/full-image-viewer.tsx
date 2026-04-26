@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { Expand, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 
 export function FullImageViewer({
   imageUrl,
@@ -35,7 +35,13 @@ export function FullImageViewer({
 
             <div className="overflow-hidden rounded-[32px] border border-white/20 bg-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.26)]">
               <div className="relative h-[70vh] min-h-[320px] w-full">
-                <Image src={imageUrl} alt={title} fill className="object-contain bg-black/10" />
+                <FlexibleImage
+                  src={imageUrl}
+                  alt={title}
+                  fill
+                  loading="eager"
+                  className="object-contain bg-black/10"
+                />
               </div>
             </div>
           </div>

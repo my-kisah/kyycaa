@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MessageCircle, CalendarDays, Eye } from "lucide-react";
+import { MessageCircle, CalendarDays, Eye, ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { CommentForm } from "@/components/comments/comment-form";
 import { CommentList } from "@/components/comments/comment-list";
@@ -10,6 +9,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { CopyLinkButton } from "@/components/memories/copy-link-button";
 import { FullImageViewer } from "@/components/memories/full-image-viewer";
 import { ViewTracker } from "@/components/memories/view-tracker";
@@ -41,9 +41,23 @@ export default async function MemoryDetailPage({
       <SiteHeader />
       <SiteShell className="space-y-8 py-12">
         <ViewTracker activityId={activity.id} />
+        <div className="flex">
+          <Link href="/dashboard">
+            <Button variant="secondary" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Keluar dari detail cerita
+            </Button>
+          </Link>
+        </div>
         <article className="overflow-hidden rounded-[38px] border border-white/60 bg-white/72 shadow-[0_30px_80px_rgba(206,140,170,0.14)]">
           <div className="relative h-[320px] md:h-[480px]">
-            <Image src={activity.imageUrl} alt={activity.title} fill className="object-cover" />
+            <FlexibleImage
+              src={activity.imageUrl}
+              alt={activity.title}
+              fill
+              loading="eager"
+              className="object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-rose-950/30 via-rose-950/5 to-transparent" />
           </div>
           <div className="space-y-6 p-8 md:p-10">

@@ -114,3 +114,23 @@ export function validateImageFile(file: File | null | undefined) {
   }
   return null;
 }
+
+export function validateImageUrl(value: string | null | undefined) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed);
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return "Link gambar harus menggunakan http atau https.";
+    }
+
+    return null;
+  } catch {
+    return "Link gambar tidak valid.";
+  }
+}

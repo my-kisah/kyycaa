@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveActivityAction } from "@/actions/activity-actions";
 import { Button } from "@/components/ui/button";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { Input } from "@/components/ui/input";
 import { RomanticDateTimePicker } from "@/components/ui/romantic-date-time-picker";
 import { SelectMenu } from "@/components/ui/select-menu";
@@ -28,6 +28,12 @@ type ActivityFormProps = {
 export function ActivityForm({ initialValues }: ActivityFormProps) {
   const router = useRouter();
   const [preview, setPreview] = useState(initialValues?.imageUrl ?? "");
+  const [imageSource, setImageSource] = useState<"file" | "link">(
+    initialValues?.imageUrl?.startsWith("http") ? "link" : "file",
+  );
+  const [imageUrlInput, setImageUrlInput] = useState(
+    initialValues?.imageUrl?.startsWith("http") ? initialValues.imageUrl : "",
+  );
   const [status, setStatus] = useState<"ACTIVE" | "HIDDEN">(initialValues?.status ?? "ACTIVE");
   const [isPending, startTransition] = useTransition();
   const statusDescription = useMemo(
@@ -207,22 +213,94 @@ export function ActivityForm({ initialValues }: ActivityFormProps) {
             </div>
 
             <div className="space-y-4">
-              <label className="text-sm font-medium text-rose-900">Upload gambar</label>
-              <Input
-                type="file"
-                name="image"
-                accept=".jpg,.jpeg,.png,.webp"
-                className="min-h-[66px] rounded-[30px] px-5 text-sm"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  const objectUrl = URL.createObjectURL(file);
-                  setPreview(objectUrl);
-                }}
-              />
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-rose-900">Sumber gambar</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setImageSource("file")}
+                    className={`rounded-[24px] border px-4 py-4 text-left transition duration-300 ${
+                      imageSource === "file"
+                        ? "border-rose-300 bg-[linear-gradient(135deg,rgba(248,205,222,0.45),rgba(255,255,255,0.95))] shadow-[0_16px_34px_rgba(214,152,178,0.12)]"
+                        : "border-rose-100/90 bg-white/78 hover:border-rose-200 hover:bg-rose-50/70"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-rose-950">Upload file</p>
+                    <p className="mt-1 text-xs leading-6 text-rose-700/78">
+                      Cocok untuk unggah langsung JPG, PNG, atau WEBP maksimal 4MB.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageSource("link")}
+                    className={`rounded-[24px] border px-4 py-4 text-left transition duration-300 ${
+                      imageSource === "link"
+                        ? "border-rose-300 bg-[linear-gradient(135deg,rgba(248,205,222,0.45),rgba(255,255,255,0.95))] shadow-[0_16px_34px_rgba(214,152,178,0.12)]"
+                        : "border-rose-100/90 bg-white/78 hover:border-rose-200 hover:bg-rose-50/70"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-rose-950">Gunakan link</p>
+                    <p className="mt-1 text-xs leading-6 text-rose-700/78">
+                      Lebih hemat database karena memakai URL gambar yang sudah online.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {imageSource === "file" ? (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-rose-900">Upload gambar</label>
+                  <Input
+                    type="file"
+                    name="image"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="min-h-[66px] rounded-[30px] px-5 text-sm"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      const objectUrl = URL.createObjectURL(file);
+                      setPreview(objectUrl);
+                    }}
+                  />
+                  <p className="text-xs leading-6 text-rose-500/90">
+                    Format yang didukung: JPG, PNG, dan WEBP dengan ukuran maksimal 4MB.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-rose-900">Link gambar</label>
+                  <Input
+                    type="url"
+                    name="imageUrl"
+                    value={imageUrlInput}
+                    placeholder="https://contoh-domain.com/gambar-romantis.jpg"
+                    className="min-h-[66px] rounded-[30px] px-5 text-sm"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setImageUrlInput(value);
+                      setPreview(value.trim());
+                    }}
+                  />
+                  <p className="text-xs leading-6 text-rose-500/90">
+                    Gunakan link `http` atau `https` agar gambar bisa dipakai tanpa membebani database.
+                  </p>
+                </div>
+              )}
+
+              {imageSource === "file" ? (
+                <input type="hidden" name="imageUrl" value="" />
+              ) : (
+                <input type="hidden" name="imageUrl" value={imageUrlInput} />
+              )}
+
               {preview ? (
                 <div className="rise-card relative h-80 overflow-hidden rounded-[32px] border border-white/60 bg-rose-50 shadow-[0_24px_48px_rgba(206,140,170,0.16)]">
-                  <Image src={preview} alt="Preview gambar" fill className="object-cover" />
+                  <FlexibleImage
+                    src={preview}
+                    alt="Preview gambar"
+                    fill
+                    className="object-cover"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-rose-950/20 via-transparent to-transparent" />
                 </div>
               ) : (

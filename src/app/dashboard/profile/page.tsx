@@ -1,8 +1,8 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { PasswordForm } from "@/components/auth/password-form";
 import { ProfileForm } from "@/components/auth/profile-form";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getInitials } from "@/lib/utils";
@@ -39,7 +39,7 @@ export default async function ProfilePage() {
           <p className="text-sm uppercase tracking-[0.35em] text-rose-500">Pengaturan Akun</p>
           <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-center">
             {user.image ? (
-              <Image
+              <FlexibleImage
                 src={user.image}
                 alt={user.name}
                 width={96}

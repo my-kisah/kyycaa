@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateProfileAction } from "@/actions/auth-actions";
 import { Button } from "@/components/ui/button";
+import { FlexibleImage } from "@/components/ui/flexible-image";
 import { Input } from "@/components/ui/input";
 
 export function ProfileForm({
@@ -120,7 +120,12 @@ export function ProfileForm({
         <p className="text-sm font-medium text-rose-900">Preview foto profil</p>
         {preview ? (
           <div className="relative h-36 w-36 overflow-hidden rounded-full border border-white/60 bg-rose-50 shadow-[0_18px_40px_rgba(206,140,170,0.14)]">
-            <Image src={preview} alt="Preview foto profil" fill className="object-cover" />
+            <FlexibleImage
+              src={preview}
+              alt="Preview foto profil"
+              fill
+              className="object-cover"
+            />
           </div>
         ) : (
           <div className="flex h-36 w-36 items-center justify-center rounded-full border border-dashed border-rose-200 bg-[linear-gradient(135deg,rgba(255,248,250,0.9),rgba(252,238,244,0.75))] text-center text-sm text-rose-600/80">

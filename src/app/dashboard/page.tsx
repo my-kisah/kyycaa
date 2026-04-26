@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
 import { getVisibleActivities } from "@/lib/data";
+import { Globe2, Code2 } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,73 @@ export default async function DashboardPage({
               Akses admin ditolak. Anda masuk sebagai user biasa.
             </p>
           ) : null}
+        </Reveal>
+
+        <Reveal delay={90}>
+          <section className="rounded-[34px] border border-rose-200/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,246,250,0.92))] p-6 shadow-[0_20px_48px_rgba(206,140,170,0.12)] backdrop-blur-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
+              Tautan Pilihan
+            </p>
+            <div className="mt-4">
+              <div>
+                <h2 className="font-display text-3xl text-rose-950">
+                  Ruang tautan yang ingin tetap dekat
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-rose-800/78">
+                  Kumpulan tautan ini tampil khusus setelah login, jadi website versi pertama dan halaman GitHub Anda bisa dibuka cepat langsung dari dashboard.
+                </p>
+              </div>
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                <a
+                  href="https://forncaa.github.io/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-[28px] border border-rose-200/90 bg-white/88 p-5 shadow-[0_16px_34px_rgba(206,140,170,0.09)] transition hover:-translate-y-1 hover:border-rose-300 hover:bg-rose-50/80 hover:shadow-[0_24px_44px_rgba(206,140,170,0.14)]"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f7adc7,#d694aa)] text-white shadow-[0_14px_28px_rgba(214,148,170,0.24)]">
+                      <Globe2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-rose-500">
+                        Website Kita
+                      </p>
+                      <h3 className="mt-2 font-display text-2xl text-rose-950">
+                        Website kita versi pertama
+                      </h3>
+                      <p className="mt-2 text-sm leading-7 text-rose-800/76">
+                        Arsip awal yang bisa dibuka kembali kapan saja untuk melihat versi pertama yang pernah dibuat.
+                      </p>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="https://github.com/depoizon"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-[28px] border border-rose-200/90 bg-white/88 p-5 shadow-[0_16px_34px_rgba(206,140,170,0.09)] transition hover:-translate-y-1 hover:border-rose-300 hover:bg-rose-50/80 hover:shadow-[0_24px_44px_rgba(206,140,170,0.14)]"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#3b2b37,#161015)] text-white shadow-[0_14px_28px_rgba(40,25,35,0.3)]">
+                      <Code2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-rose-500">
+                        Alternatif
+                      </p>
+                      <h3 className="mt-2 font-display text-2xl text-rose-950">
+                        GitHub depoizon
+                      </h3>
+                      <p className="mt-2 text-sm leading-7 text-rose-800/76">
+                        Jika ingin membuka ruang proyek dan arsip pengembangan, tautan GitHub ini bisa langsung dipakai dari dashboard.
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </section>
         </Reveal>
 
         <Reveal delay={120}>
