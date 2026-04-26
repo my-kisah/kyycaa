@@ -10,6 +10,18 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIdentifier } from "@/lib/auth-helpers";
 import { loginSchema } from "@/lib/validators";
 
+function getSessionSafeImage(image?: string | null) {
+  if (!image) {
+    return null;
+  }
+
+  if (image.startsWith("data:") || image.startsWith("blob:") || image.startsWith("inline:")) {
+    return null;
+  }
+
+  return image;
+}
+
 const providers: Provider[] = [
   Credentials({
     credentials: {
@@ -63,7 +75,7 @@ const providers: Provider[] = [
         email: user.email,
         name: user.name,
         username: user.username,
-        image: user.image,
+        image: getSessionSafeImage(user.image),
         role: user.role,
         bannedAt: user.bannedAt?.toISOString() ?? null,
         banReason: user.banReason ?? null,
@@ -147,7 +159,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.sub = dbUser.id;
         token.role = dbUser.role;
         token.name = dbUser.name;
-        token.picture = dbUser.image;
+        token.picture = getSessionSafeImage(dbUser.image);
         token.username = dbUser.username;
         token.bannedAt = dbUser.bannedAt?.toISOString() ?? null;
         token.banReason = dbUser.banReason ?? null;
