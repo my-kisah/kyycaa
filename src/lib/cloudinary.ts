@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { randomUUID } from "node:crypto";
 
 let configured = false;
 
@@ -41,9 +42,20 @@ function ensureConfigured() {
 }
 
 export async function uploadImage(file: File, folder = "cerita-kita/activities") {
-  ensureConfigured();
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  if (!isCloudinaryConfigured()) {
+    const mimeType = file.type || "image/jpeg";
+    const base64 = buffer.toString("base64");
+
+    return {
+      secure_url: `data:${mimeType};base64,${base64}`,
+      public_id: `inline:${randomUUID()}`,
+    };
+  }
+
+  ensureConfigured();
 
   return new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -70,6 +82,8 @@ export async function uploadImage(file: File, folder = "cerita-kita/activities")
 
 export async function deleteImage(publicId?: string | null) {
   if (!publicId) return;
+  if (publicId.startsWith("inline:")) return;
+  if (!isCloudinaryConfigured()) return;
   ensureConfigured();
   await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
 }
