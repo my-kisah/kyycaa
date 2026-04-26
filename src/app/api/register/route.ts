@@ -61,13 +61,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Register route failed", error);
+    const message =
+      error instanceof Error &&
+      /readonly database|Unable to open the database file/i.test(error.message)
+        ? "Production di Vercel belum memakai database online yang bisa ditulis. Login admin sudah aktif, tetapi register user baru masih menunggu database production."
+        : process.env.NODE_ENV === "development" && error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat membuat akun.";
     return NextResponse.json(
-      {
-        error:
-          process.env.NODE_ENV === "development" && error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat membuat akun.",
-      },
+      { error: message },
       { status: 500 },
     );
   }
