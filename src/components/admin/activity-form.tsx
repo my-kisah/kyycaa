@@ -1,12 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { Sparkles } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveActivityAction } from "@/actions/activity-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RomanticDateTimePicker } from "@/components/ui/romantic-date-time-picker";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { Textarea } from "@/components/ui/textarea";
 
 type ActivityFormProps = {
@@ -25,11 +28,19 @@ type ActivityFormProps = {
 export function ActivityForm({ initialValues }: ActivityFormProps) {
   const router = useRouter();
   const [preview, setPreview] = useState(initialValues?.imageUrl ?? "");
+  const [status, setStatus] = useState<"ACTIVE" | "HIDDEN">(initialValues?.status ?? "ACTIVE");
   const [isPending, startTransition] = useTransition();
+  const statusDescription = useMemo(
+    () =>
+      status === "ACTIVE"
+        ? "Konten akan langsung muncul di dashboard user setelah dipublikasikan."
+        : "Konten disimpan lebih dulu dan tetap tersembunyi dari user biasa.",
+    [status],
+  );
 
   return (
     <form
-      className="relative space-y-8 rounded-[34px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,248,251,0.96))] p-6 shadow-[0_32px_80px_rgba(206,140,170,0.18)] md:p-8"
+      className="relative space-y-8 overflow-hidden rounded-[36px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,248,251,0.96))] p-6 shadow-[0_32px_80px_rgba(206,140,170,0.18)] md:p-8"
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -49,24 +60,38 @@ export function ActivityForm({ initialValues }: ActivityFormProps) {
       <input type="hidden" name="id" defaultValue={initialValues?.id ?? ""} />
 
       <div className="relative grid gap-8">
-        <section className="rounded-[30px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)]">
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
-              Informasi Utama
-            </p>
-            <h2 className="mt-3 font-display text-3xl text-rose-950">
-              Susun cerita dengan detail yang lebih hidup
-            </h2>
+        <section className="group rounded-[32px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(208,148,170,0.18)]">
+          <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
+                Informasi Utama
+              </p>
+              <h2 className="mt-3 font-display text-3xl text-rose-950 md:text-[2.9rem]">
+                Susun cerita dengan detail yang lebih hidup
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-rose-800/78 md:text-[15px]">
+                Rangkai judul dan cerita dalam suasana yang lembut, rapi, dan mudah
+                dibaca agar setiap momen terasa lebih personal saat dibuka kembali.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 self-start rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-rose-500 shadow-[0_14px_28px_rgba(214,152,178,0.12)]">
+              <Sparkles className="h-3.5 w-3.5" />
+              Estetika Cerita
+            </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="space-y-2">
               <label className="text-sm font-medium text-rose-900">Judul konten</label>
               <Input
                 name="title"
                 defaultValue={initialValues?.title}
-                placeholder="Misalnya: Malam di bawah lampu kota"
+                placeholder="Misalnya: Hujan kecil, lampu kota, dan percakapan yang ingin diulang"
+                className="min-h-[68px] rounded-[30px] px-5 text-base md:text-lg"
               />
+              <p className="pl-1 text-xs leading-6 text-rose-500/90">
+                Gunakan judul yang puitis dan mudah diingat agar terasa lebih hidup saat dibaca kembali.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-rose-900">Kategori</label>
@@ -74,66 +99,111 @@ export function ActivityForm({ initialValues }: ActivityFormProps) {
                 name="category"
                 defaultValue={initialValues?.category}
                 placeholder="Date Night"
+                className="min-h-[68px] rounded-[30px] px-5 text-base"
               />
+              <p className="pl-1 text-xs leading-6 text-rose-500/90">
+                Contoh: Date Night, Anniversary, Catatan Hati, atau Momen Tenang.
+              </p>
             </div>
           </div>
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-8 space-y-2">
             <label className="text-sm font-medium text-rose-900">Deskripsi lengkap</label>
             <Textarea
               name="description"
               defaultValue={initialValues?.description}
-              placeholder="Tulis cerita lengkap yang ingin dipublikasikan..."
+              placeholder="Tulis cerita lengkap yang ingin dipublikasikan, biarkan momen ini memiliki ruang untuk bernapas dan dikenang..."
+              className="min-h-[260px] rounded-[30px] px-5 py-5 text-[15px] leading-8 md:text-base"
             />
+            <p className="pl-1 text-xs leading-6 text-rose-500/90">
+              Tidak ada batas karakter untuk judul dan deskripsi, jadi Anda bisa menulis seutuh yang dibutuhkan.
+            </p>
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="rounded-[30px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)]">
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
-                Detail Publikasi
-              </p>
-              <h3 className="mt-3 font-display text-3xl text-rose-950">
-                Atur momen, tag, dan visibilitas
-              </h3>
+        <div className="grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
+          <section className="group rounded-[32px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(208,148,170,0.18)]">
+            <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
+                  Detail Publikasi
+                </p>
+                <h3 className="mt-3 font-display text-3xl text-rose-950 md:text-[2.7rem]">
+                  Atur momen, tag, dan visibilitas
+                </h3>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-rose-800/78 md:text-[15px]">
+                  Buat tampilan publikasi terasa lebih kurasi: waktunya jelas, tag-nya peka, dan statusnya mudah dipahami.
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-white/70 bg-[linear-gradient(135deg,rgba(252,241,245,0.9),rgba(255,255,255,0.88))] px-4 py-3 text-sm leading-7 text-rose-800/80 shadow-[0_12px_24px_rgba(214,152,178,0.1)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-rose-400">
+                  Status terpilih
+                </p>
+                <p className="mt-1 font-medium text-rose-950">
+                  {status === "ACTIVE" ? "Publish / Active" : "Simpan sebagai Hidden"}
+                </p>
+              </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-rose-900">Tanggal kegiatan</label>
-                <Input type="datetime-local" name="date" defaultValue={initialValues?.date} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-rose-900">Tags</label>
-                <Input
-                  name="tags"
-                  defaultValue={initialValues?.tags}
-                  placeholder="romantis, dinner, sunset"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-rose-900">Status</label>
-                <select
-                  name="status"
-                  defaultValue={initialValues?.status ?? "ACTIVE"}
-                  className="field-shell w-full rounded-[26px] px-4 py-3.5 text-sm text-rose-950 outline-none transition duration-300 focus:-translate-y-0.5 focus:ring-4 focus:ring-rose-200/50"
-                >
-                  <option value="ACTIVE">Publish / Active</option>
-                  <option value="HIDDEN">Simpan sebagai Hidden</option>
-                </select>
+            <div className="grid gap-6 2xl:grid-cols-[1.06fr_0.94fr]">
+              <RomanticDateTimePicker
+                name="date"
+                defaultValue={initialValues?.date}
+                label="Tanggal kegiatan"
+              />
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-rose-900">Tags</label>
+                  <Input
+                    name="tags"
+                    defaultValue={initialValues?.tags}
+                    placeholder="romantis, dinner, sunset"
+                    className="min-h-[68px] rounded-[30px] px-5 text-base"
+                  />
+                  <p className="pl-1 text-xs leading-6 text-rose-500/90">
+                    Pisahkan dengan koma untuk membantu konten lebih mudah ditemukan.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <SelectMenu
+                    label="Status"
+                    value={status}
+                    options={[
+                      { value: "ACTIVE", label: "Publish / Active" },
+                      { value: "HIDDEN", label: "Simpan sebagai Hidden" },
+                    ]}
+                    onChange={(value) => setStatus(value as "ACTIVE" | "HIDDEN")}
+                  />
+                  <input type="hidden" name="status" value={status} />
+                  <div className="rounded-[24px] border border-rose-100/90 bg-white/78 px-4 py-3 text-sm leading-7 text-rose-800/80 shadow-[0_12px_28px_rgba(214,152,178,0.08)]">
+                    {statusDescription}
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-[30px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)]">
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
-                Visual Utama
+          <section className="group rounded-[32px] border border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,249,251,0.98))] p-6 shadow-[0_24px_48px_rgba(208,148,170,0.14)] transition duration-500 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(208,148,170,0.18)]">
+            <div className="mb-7 flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-500">
+                    Visual Utama
+                  </p>
+                  <h3 className="mt-3 font-display text-3xl text-rose-950 md:text-[2.7rem]">
+                    Pilih gambar yang memperkuat suasana
+                  </h3>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.26em] text-rose-500 shadow-[0_14px_30px_rgba(214,152,178,0.1)]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Visual Story
+                </div>
+              </div>
+              <p className="max-w-xl text-sm leading-7 text-rose-800/78 md:text-[15px]">
+                Gunakan visual yang lembut dan kuat secara suasana agar kartu kenangan terlihat estetik saat dibuka di dashboard.
               </p>
-              <h3 className="mt-3 font-display text-3xl text-rose-950">
-                Pilih gambar yang memperkuat suasana
-              </h3>
             </div>
 
             <div className="space-y-4">
@@ -142,6 +212,7 @@ export function ActivityForm({ initialValues }: ActivityFormProps) {
                 type="file"
                 name="image"
                 accept=".jpg,.jpeg,.png,.webp"
+                className="min-h-[66px] rounded-[30px] px-5 text-sm"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
@@ -150,27 +221,35 @@ export function ActivityForm({ initialValues }: ActivityFormProps) {
                 }}
               />
               {preview ? (
-                <div className="rise-card relative h-72 overflow-hidden rounded-[30px] border border-white/60 bg-rose-50">
+                <div className="rise-card relative h-80 overflow-hidden rounded-[32px] border border-white/60 bg-rose-50 shadow-[0_24px_48px_rgba(206,140,170,0.16)]">
                   <Image src={preview} alt="Preview gambar" fill className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-rose-950/20 via-transparent to-transparent" />
                 </div>
               ) : (
-                <div className="flex h-72 items-center justify-center rounded-[30px] border border-dashed border-rose-200 bg-[linear-gradient(135deg,rgba(255,248,250,0.9),rgba(252,238,244,0.75))] text-sm text-rose-600/80">
-                  Preview gambar akan muncul di sini.
+                <div className="flex h-80 items-center justify-center rounded-[32px] border border-dashed border-rose-200 bg-[linear-gradient(135deg,rgba(255,248,250,0.9),rgba(252,238,244,0.75))] px-8 text-center text-sm leading-8 text-rose-600/80">
+                  Preview gambar akan muncul di sini dengan bingkai yang lebih lembut dan siap tampil di halaman kenangan.
                 </div>
               )}
             </div>
           </section>
         </div>
-      </div>
 
-      <div className="relative flex flex-wrap gap-3">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Menyimpan..." : initialValues ? "Simpan perubahan" : "Publish konten"}
-        </Button>
-        <Button type="button" variant="secondary" onClick={() => router.back()}>
-          Batalkan
-        </Button>
+        <div className="relative flex flex-wrap items-center gap-3 rounded-[28px] border border-white/70 bg-white/72 px-5 py-4 shadow-[0_18px_34px_rgba(214,152,178,0.12)] backdrop-blur-xl">
+          <div className="mr-auto">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-rose-400">
+              Siap Dipublikasikan
+            </p>
+            <p className="mt-1 text-sm text-rose-800/80">
+              Pastikan cerita, waktu, dan visualnya sudah terasa pas sebelum dipublikasikan.
+            </p>
+          </div>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Menyimpan..." : initialValues ? "Simpan perubahan" : "Publish konten"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => router.back()}>
+            Batalkan
+          </Button>
+        </div>
       </div>
     </form>
   );

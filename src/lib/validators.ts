@@ -40,11 +40,8 @@ export const commentSchema = z.object({
 
 export const activitySchema = z.object({
   id: z.string().optional(),
-  title: z.string().min(4, "Judul minimal 4 karakter.").max(120, "Judul terlalu panjang."),
-  description: z
-    .string()
-    .min(30, "Deskripsi minimal 30 karakter.")
-    .max(6000, "Deskripsi terlalu panjang."),
+  title: z.string().min(4, "Judul minimal 4 karakter."),
+  description: z.string().min(30, "Deskripsi minimal 30 karakter."),
   date: z.string().min(1, "Tanggal wajib diisi."),
   category: z.string().min(2, "Kategori wajib diisi.").max(40, "Kategori terlalu panjang."),
   tags: z.string().max(120, "Tag terlalu panjang.").optional().default(""),

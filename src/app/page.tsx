@@ -10,7 +10,10 @@ export default async function Home() {
   await auth();
 
   return (
-    <div className="floating-hearts relative min-h-screen overflow-x-hidden">
+    <div
+      suppressHydrationWarning
+      className="floating-hearts relative min-h-screen overflow-x-hidden"
+    >
       <SiteHeader />
       <main className="relative z-10">
         <HeroSection />

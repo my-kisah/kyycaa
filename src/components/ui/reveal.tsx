@@ -39,6 +39,7 @@ export function Reveal({
   return (
     <div
       ref={ref}
+      suppressHydrationWarning
       className={cn("reveal-block", visible && "is-visible", className)}
       style={{ transitionDelay: `${delay}ms` }}
     >

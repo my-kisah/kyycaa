@@ -10,14 +10,26 @@ export async function SiteHeader() {
   const dashboardHref = user?.role === "ADMIN" ? "/admin" : "/dashboard";
 
   return (
-    <header className="sticky top-0 z-[80] border-b border-rose-100/80 bg-[rgba(255,250,252,0.94)] shadow-[0_12px_40px_rgba(214,148,170,0.08)] backdrop-blur-2xl">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-8">
-        <div className="flex items-center justify-between gap-4 lg:min-w-0 lg:flex-1">
+    <header
+      suppressHydrationWarning
+      className="sticky top-0 z-[80] border-b border-rose-100/80 bg-[rgba(255,250,252,0.94)] shadow-[0_12px_40px_rgba(214,148,170,0.08)] backdrop-blur-2xl"
+    >
+      <div
+        suppressHydrationWarning
+        className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-8"
+      >
+        <div
+          suppressHydrationWarning
+          className="flex items-center justify-between gap-4 lg:min-w-0 lg:flex-1"
+        >
           <Link href="/" className="flex min-w-0 items-center gap-3">
-            <div className="float-subtle flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f7adc7,#d694aa)] text-lg font-bold text-white shadow-[0_16px_36px_rgba(214,148,170,0.28)]">
+            <div
+              suppressHydrationWarning
+              className="float-subtle flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f7adc7,#d694aa)] text-lg font-bold text-white shadow-[0_16px_36px_rgba(214,148,170,0.28)]"
+            >
               <Heart className="h-6 w-6 fill-white text-white" />
             </div>
-            <div className="min-w-0">
+            <div suppressHydrationWarning className="min-w-0">
               <p className="shimmer-text truncate font-display text-[1.85rem] leading-none sm:text-[2rem]">
                 Cerita Kita
               </p>
@@ -40,7 +52,10 @@ export async function SiteHeader() {
         </div>
 
         <nav className="hidden flex-1 items-center justify-center lg:flex">
-          <div className="soft-shine hover-glow flex items-center gap-1 rounded-full border border-rose-200/90 bg-white/88 p-1.5 shadow-[0_12px_30px_rgba(206,140,170,0.08)] backdrop-blur-xl">
+          <div
+            suppressHydrationWarning
+            className="soft-shine hover-glow flex items-center gap-1 rounded-full border border-rose-200/90 bg-white/88 p-1.5 shadow-[0_12px_30px_rgba(206,140,170,0.08)] backdrop-blur-xl"
+          >
             <Link
               href="/#tentang"
               className="rounded-full px-4 py-2.5 text-sm font-medium text-rose-800 transition hover:bg-rose-50 hover:text-rose-950"
@@ -57,8 +72,9 @@ export async function SiteHeader() {
         </nav>
 
         {user ? (
-          <div className="w-full lg:ml-auto lg:w-auto">
+          <div suppressHydrationWarning className="w-full lg:ml-auto lg:w-auto">
             <div
+              suppressHydrationWarning
               className={`rounded-[24px] border border-rose-100/90 bg-white/78 p-2 shadow-[0_10px_28px_rgba(206,140,170,0.08)] backdrop-blur-xl ${
                 user.role !== "ADMIN" ? "grid grid-cols-3" : "grid grid-cols-2"
               } gap-2 sm:gap-3 lg:flex lg:w-auto lg:items-center`}

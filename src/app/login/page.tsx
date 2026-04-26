@@ -38,6 +38,8 @@ export default async function LoginPage({
         <AuthCard
           title="Login User"
           description="Masuk menggunakan email atau username dan password untuk membuka semua cerita dan fitur komentar."
+          backHref="/"
+          backLabel="Kembali ke beranda"
         >
           <LoginForm portal="user" callbackUrl={params.callbackUrl} />
         </AuthCard>

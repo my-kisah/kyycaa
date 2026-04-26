@@ -34,6 +34,8 @@ export default async function AdminLoginPage({
         <AuthCard
           title="Login Admin"
           description="Masuk menggunakan email admin dan password yang sudah dibuat khusus oleh pemilik website."
+          backHref="/"
+          backLabel="Kembali ke beranda"
         >
           <LoginForm portal="admin" callbackUrl={params.callbackUrl} />
         </AuthCard>

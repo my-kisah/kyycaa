@@ -32,6 +32,8 @@ export default async function RegisterPage() {
         <AuthCard
           title="Register User"
           description="Buat akun dengan nama, username, email, dan password. Setelah berhasil, Anda langsung masuk sebagai user."
+          backHref="/"
+          backLabel="Kembali ke beranda"
         >
           <RegisterForm />
         </AuthCard>

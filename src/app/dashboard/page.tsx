@@ -29,7 +29,7 @@ export default async function DashboardPage({
   ];
 
   return (
-    <div className="floating-hearts min-h-screen pb-16">
+    <div suppressHydrationWarning className="floating-hearts min-h-screen pb-16">
       <SiteHeader />
       <SiteShell className="space-y-8 py-12">
         <Reveal className="glass-card soft-shine rounded-[36px] p-8" delay={40}>

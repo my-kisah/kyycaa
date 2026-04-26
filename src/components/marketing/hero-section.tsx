@@ -11,7 +11,7 @@ export function HeroSection() {
           <p className="soft-shine mb-5 inline-flex rounded-full border border-white/60 bg-white/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-rose-500 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
             Private Romantic Memory Platform
           </p>
-          <h1 className="shimmer-text font-display text-5xl leading-tight md:text-7xl">
+          <h1 className="shimmer-text max-w-[11ch] font-display text-[clamp(2.3rem,5.1vw,4.2rem)] leading-[1.02] tracking-[-0.012em]">
             Website ini bersifat privat. Silakan login atau register terlebih dahulu untuk melihat isi di dalamnya.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-9 text-rose-800/80 md:text-xl">
@@ -35,14 +35,14 @@ export function HeroSection() {
               <Button variant="secondary" className="button-sheen">Register</Button>
             </Link>
           </div>
-          <div className="mt-10 grid gap-4 text-sm text-rose-800/80 sm:grid-cols-3">
-            <div className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
+          <div suppressHydrationWarning className="mt-10 grid gap-4 text-sm text-rose-800/80 sm:grid-cols-3">
+            <div suppressHydrationWarning className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
               Pengunjung baru wajib login atau register lebih dulu.
             </div>
-            <div className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
+            <div suppressHydrationWarning className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
               Dashboard, cerita, dan komentar hanya terbuka setelah login.
             </div>
-            <div className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
+            <div suppressHydrationWarning className="hover-glow rounded-[28px] border border-white/55 bg-white/55 px-5 py-4 shadow-[0_16px_40px_rgba(208,148,170,0.12)] backdrop-blur-xl">
               Sistem dibuat privat agar isi kenangan tetap aman.
             </div>
           </div>
