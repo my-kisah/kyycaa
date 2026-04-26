@@ -26,12 +26,13 @@ export default async function RegisterPage() {
           </h2>
           <p className="mt-6 text-base leading-8 text-rose-800/80">
             Semua akun yang dibuat dari halaman ini otomatis menjadi user. Tidak
-            ada register admin publik demi keamanan website.
+            ada register admin publik demi keamanan website, dan hanya email
+            @gmail.com yang sementara diterima.
           </p>
         </Reveal>
         <AuthCard
           title="Register User"
-          description="Buat akun dengan nama, username, email, dan password. Setelah berhasil, Anda langsung masuk sebagai user."
+          description="Buat akun dengan nama, username, email Gmail, dan password. Setelah berhasil, silakan login lalu selesaikan verifikasi OTP."
           backHref="/"
           backLabel="Kembali ke beranda"
         >

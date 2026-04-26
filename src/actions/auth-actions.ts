@@ -2,10 +2,12 @@
 
 import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadImage } from "@/lib/cloudinary";
+import { normalizeIdentifier } from "@/lib/auth-helpers";
 import {
   adminBanSchema,
   adminCreateSchema,
@@ -14,7 +16,7 @@ import {
   profileSchema,
   validateImageFile,
 } from "@/lib/validators";
-import { isAdminEmail, normalizeIdentifier } from "@/lib/auth-helpers";
+import { isAdminEmail } from "@/lib/auth-helpers";
 
 export async function logoutAction() {
   await signOut({ redirectTo: "/" });
@@ -395,53 +397,76 @@ export async function getLoginGuardMessageAction(payload: {
   portal: "user" | "admin";
 }) {
   const normalizedIdentifier = normalizeIdentifier(payload.identifier);
-
   if (!normalizedIdentifier) {
     return { error: "Masukkan email atau username yang valid." };
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: normalizedIdentifier }, { username: normalizedIdentifier }],
-    },
-    select: {
-      role: true,
-      bannedAt: true,
-      banReason: true,
-    },
-  });
-
-  if (!user) {
-    return {
-      error:
-        payload.portal === "admin"
-          ? "Login admin gagal. Pastikan email admin dan password benar."
-          : "Login gagal. Periksa email atau username dan password Anda.",
-    };
-  }
-
-  if (payload.portal === "admin" && user.role !== "ADMIN") {
-    return {
-      error: "Login admin gagal. Pastikan email admin dan password benar.",
-    };
-  }
-
-  if (payload.portal === "user") {
-    if (user.role !== "USER") {
-      return { error: "Login gagal. Periksa email atau username dan password Anda." };
-    }
-
-    if (user.bannedAt) {
-      return {
-        error: `Akun telah dibekukan. Alasan: ${user.banReason ?? "Tidak ada alasan yang ditulis admin."}`,
-      };
-    }
-  }
-
   return {
-    error:
-      payload.portal === "admin"
+    error: normalizedIdentifier.includes("@") && !normalizedIdentifier.endsWith("@gmail.com")
+      ? "Saat ini hanya email @gmail.com yang diterima."
+      : payload.portal === "admin"
         ? "Login admin gagal. Pastikan email admin dan password benar."
         : "Login gagal. Periksa email atau username dan password Anda.",
   };
+}
+
+export async function verifyRegistrationOtpAction(
+  _previousState: { error: string },
+  formData: FormData,
+) {
+  const challengeId = String(formData.get("challengeId") ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim();
+
+  if (!challengeId) {
+    return { error: "Challenge verifikasi tidak valid." };
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    return { error: "Kode OTP harus 6 digit angka." };
+  }
+
+  const challenge = await prisma.otpChallenge.findUnique({
+    where: { id: challengeId },
+    include: { user: true },
+  });
+
+  if (!challenge?.user || challenge.portal !== "register") {
+    return { error: "Verifikasi register tidak ditemukan atau sudah tidak berlaku." };
+  }
+
+  if (challenge.consumedAt || challenge.expiresAt < new Date() || challenge.attempts >= 5) {
+    return { error: "Kode OTP sudah kedaluwarsa atau tidak bisa dipakai lagi." };
+  }
+
+  const validCode = await compare(code, challenge.codeHash);
+
+  if (!validCode) {
+    await prisma.otpChallenge.update({
+      where: { id: challenge.id },
+      data: {
+        attempts: {
+          increment: 1,
+        },
+      },
+    });
+
+    return { error: "Kode OTP salah. Periksa kembali email Anda." };
+  }
+
+  await prisma.$transaction([
+    prisma.otpChallenge.update({
+      where: { id: challenge.id },
+      data: {
+        consumedAt: new Date(),
+      },
+    }),
+    prisma.user.update({
+      where: { id: challenge.user.id },
+      data: {
+        emailVerified: new Date(),
+      },
+    }),
+  ]);
+
+  redirect("/login?registered=verified");
 }

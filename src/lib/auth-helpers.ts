@@ -1,5 +1,8 @@
 import { Role } from "@prisma/client";
 
+const gmailPattern = /^[^@\s]+@gmail\.com$/i;
+const REGISTER_OTP_ROLLOUT_AT = new Date("2026-04-27T00:00:00+07:00");
+
 export function getAdminEmails() {
   return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -18,4 +21,28 @@ export function getExpectedRole(email?: string | null) {
 
 export function normalizeIdentifier(value: string) {
   return value.trim().toLowerCase();
+}
+
+export function isAllowedEmailDomain(email?: string | null) {
+  if (!email) return false;
+  return gmailPattern.test(email.trim().toLowerCase());
+}
+
+export function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+  if (!name || !domain) return email;
+
+  if (name.length <= 2) {
+    return `${name[0] ?? "*"}***@${domain}`;
+  }
+
+  return `${name.slice(0, 2)}***${name.slice(-1)}@${domain}`;
+}
+
+export function requiresRegisterOtpVerification(createdAt?: Date | null) {
+  if (!createdAt) {
+    return false;
+  }
+
+  return createdAt >= REGISTER_OTP_ROLLOUT_AT;
 }

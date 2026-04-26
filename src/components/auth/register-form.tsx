@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ type RegisterValues = {
 };
 
 export function RegisterForm() {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState("");
   const {
@@ -37,28 +38,34 @@ export function RegisterForm() {
         body: JSON.stringify(values),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        challengeId?: string;
+        maskedEmail?: string;
+        debugCode?: string;
+      };
 
       if (!response.ok) {
         setServerError(data.error ?? "Register gagal.");
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        identifier: values.email,
-        password: values.password,
-        portal: "user",
-        redirect: false,
-      });
+      const params = new URLSearchParams();
 
-      if (signInResult?.error) {
-        toast.success("Akun berhasil dibuat. Silakan login.");
-        window.location.href = "/login";
-        return;
+      if (data.challengeId) {
+        params.set("challenge", data.challengeId);
       }
 
-      toast.success("Registrasi berhasil.");
-      window.location.href = "/dashboard";
+      if (data.maskedEmail) {
+        params.set("email", data.maskedEmail);
+      }
+
+      if (data.debugCode) {
+        params.set("debug", data.debugCode);
+      }
+
+      toast.success("Akun berhasil dibuat. Lanjutkan verifikasi OTP dari email Anda.");
+      router.push(`/verify-register?${params.toString()}`);
     });
   }
 
@@ -106,6 +113,9 @@ export function RegisterForm() {
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Membuat akun..." : "Daftar sekarang"}
       </Button>
+      <p className="text-center text-sm text-rose-700/80">
+        Register publik sementara hanya menerima email berakhiran @gmail.com.
+      </p>
       <p className="text-center text-sm text-rose-700/80">
         Sudah punya akun?{" "}
         <Link href="/login" className="font-semibold text-rose-600">

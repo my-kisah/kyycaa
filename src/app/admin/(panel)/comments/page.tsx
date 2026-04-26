@@ -75,6 +75,22 @@ export default async function AdminCommentsPage({
                 />
               </div>
               <p className="mt-4 text-sm leading-8 text-rose-800/82">{comment.commentText}</p>
+              {comment.replies.length ? (
+                <div className="mt-4 space-y-3 border-l border-rose-100 pl-4">
+                  {comment.replies.map((reply) => (
+                    <div
+                      key={reply.id}
+                      className="rounded-[22px] border border-rose-100/80 bg-rose-50/70 p-4"
+                    >
+                      <p className="font-medium text-rose-900">{reply.userName}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.2em] text-rose-500">
+                        {formatDate(reply.createdAt, "dd MMM yyyy, HH:mm")}
+                      </p>
+                      <p className="mt-3 text-sm leading-7 text-rose-800/82">{reply.commentText}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

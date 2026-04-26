@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const acceptedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+const gmailPattern = /^[^@\s]+@gmail\.com$/i;
 
 export const registerSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter.").max(60, "Nama terlalu panjang."),
@@ -10,7 +11,9 @@ export const registerSchema = z.object({
     .min(3, "Username minimal 3 karakter.")
     .max(24, "Username maksimal 24 karakter.")
     .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, dan underscore."),
-  email: z.email("Masukkan email yang valid."),
+  email: z
+    .email("Masukkan email yang valid.")
+    .refine((value) => gmailPattern.test(value), "Saat ini hanya email @gmail.com yang diterima."),
   password: z
     .string()
     .min(8, "Password minimal 8 karakter.")
@@ -31,6 +34,7 @@ export const loginSchema = z.object({
 
 export const commentSchema = z.object({
   contentId: z.string().min(1),
+  parentId: z.string().optional(),
   commentText: z
     .string()
     .trim()
@@ -56,7 +60,25 @@ export const profileSchema = z.object({
     .min(3, "Username minimal 3 karakter.")
     .max(24, "Username maksimal 24 karakter.")
     .regex(/^[a-zA-Z0-9_.]+$/, "Username hanya boleh huruf, angka, titik, dan underscore."),
-  email: z.email("Masukkan email yang valid."),
+  email: z
+    .email("Masukkan email yang valid.")
+    .refine((value) => gmailPattern.test(value), "Saat ini hanya email @gmail.com yang diterima."),
+});
+
+export const otpChallengeSchema = z.object({
+  identifier: z.string().trim().min(3, "Masukkan email atau username yang valid."),
+  password: z.string().min(1, "Password wajib diisi."),
+  portal: z.enum(["user", "admin"]),
+  callbackUrl: z.string().optional(),
+});
+
+export const otpVerifySchema = z.object({
+  challengeId: z.string().min(1, "Challenge OTP tidak valid."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Kode OTP harus 6 digit angka."),
+  portal: z.enum(["user", "admin"]),
 });
 
 export const passwordChangeSchema = z

@@ -129,6 +129,9 @@ export function LoginForm({
       {portal === "user" ? (
         <>
           <p className="text-center text-sm text-rose-700/80">
+            Login harian Anda tetap cepat, sementara OTP verifikasi dipakai saat register akun baru.
+          </p>
+          <p className="text-center text-sm text-rose-700/80">
             Belum punya akun?{" "}
             <Link href="/register" className="font-semibold text-rose-600">
               Register di sini

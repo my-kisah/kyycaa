@@ -61,7 +61,31 @@ export async function getActivityBySlug(slug: string, includeHidden = false) {
     },
     include: {
       comments: {
+        where: {
+          parentId: null,
+        },
         orderBy: { createdAt: "desc" },
+        include: {
+          reactions: {
+            select: {
+              id: true,
+              emoji: true,
+              userId: true,
+            },
+          },
+          replies: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              reactions: {
+                select: {
+                  id: true,
+                  emoji: true,
+                  userId: true,
+                },
+              },
+            },
+          },
+        },
       },
       createdBy: {
         select: {
@@ -182,7 +206,10 @@ export async function getAdminAnalytics() {
 
 export async function getCommentAdminList(contentId?: string) {
   return prisma.comment.findMany({
-    where: contentId && contentId !== "all" ? { contentId } : undefined,
+    where: {
+      ...(contentId && contentId !== "all" ? { contentId } : {}),
+      parentId: null,
+    },
     orderBy: { createdAt: "desc" },
     include: {
       content: {
@@ -191,6 +218,9 @@ export async function getCommentAdminList(contentId?: string) {
           title: true,
           slug: true,
         },
+      },
+      replies: {
+        orderBy: { createdAt: "asc" },
       },
     },
   });

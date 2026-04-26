@@ -1,14 +1,13 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Role } from "@prisma/client";
-import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import type { Provider } from "next-auth/providers";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "@/auth.config";
+import { requiresRegisterOtpVerification } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { normalizeIdentifier } from "@/lib/auth-helpers";
-import { loginSchema } from "@/lib/validators";
+import { validateLoginCredentials } from "@/lib/login-helpers";
 
 function getSessionSafeImage(image?: string | null) {
   if (!image) {
@@ -24,61 +23,39 @@ function getSessionSafeImage(image?: string | null) {
 
 const providers: Provider[] = [
   Credentials({
+    id: "credentials",
     credentials: {
       identifier: {},
       password: {},
       portal: {},
     },
     authorize: async (rawCredentials) => {
-      const parsed = loginSchema.safeParse(rawCredentials);
+      const validated = await validateLoginCredentials(rawCredentials);
 
-      if (!parsed.success) {
+      if ("error" in validated) {
         return null;
       }
 
-      const { identifier, password, portal } = parsed.data;
-      const normalizedIdentifier = normalizeIdentifier(identifier);
-
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: normalizedIdentifier },
-            { username: normalizedIdentifier },
-          ],
-        },
-      });
-
-      if (!user?.passwordHash) {
-        return null;
-      }
-
-      const validPassword = await compare(password, user.passwordHash);
-
-      if (!validPassword) {
-        return null;
-      }
-
-      if (user.role === Role.USER && user.bannedAt) {
-        return null;
-      }
-
-      if (portal === "admin") {
-        if (user.role !== Role.ADMIN) {
-          return null;
-        }
-      } else if (user.role !== Role.USER) {
-        return null;
+      try {
+        await prisma.user.update({
+          where: { id: validated.user.id },
+          data: {
+            lastLoginAt: new Date(),
+          },
+        });
+      } catch (error) {
+        console.warn("Skipping lastLoginAt update during credentials sign in", error);
       }
 
       return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        username: user.username,
-        image: getSessionSafeImage(user.image),
-        role: user.role,
-        bannedAt: user.bannedAt?.toISOString() ?? null,
-        banReason: user.banReason ?? null,
+        id: validated.user.id,
+        email: validated.user.email,
+        name: validated.user.name,
+        username: validated.user.username,
+        image: getSessionSafeImage(validated.user.image),
+        role: validated.user.role,
+        bannedAt: validated.user.bannedAt?.toISOString() ?? null,
+        banReason: validated.user.banReason ?? null,
       };
     },
   }),
@@ -97,21 +74,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "credentials") {
         const existingUser = await prisma.user.findUnique({
           where: { email },
-          select: { id: true, role: true, bannedAt: true },
+          select: { id: true, role: true, bannedAt: true, emailVerified: true, createdAt: true },
         });
 
         if (!existingUser) return false;
         if (existingUser.role === Role.USER && existingUser.bannedAt) return false;
-
-        try {
-          await prisma.user.update({
-            where: { email },
-            data: {
-              lastLoginAt: new Date(),
-            },
-          });
-        } catch (error) {
-          console.warn("Skipping lastLoginAt update during sign in", error);
+        if (
+          existingUser.role === Role.USER &&
+          !existingUser.emailVerified &&
+          requiresRegisterOtpVerification(existingUser.createdAt)
+        ) {
+          return false;
         }
       }
 
