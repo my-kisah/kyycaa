@@ -920,8 +920,6 @@ export async function POST(request: Request) {
   const session = await loadSession(chatId);
 
   try {
-    track(session, update.message ?? null);
-
     if (update.callback_query) {
       await handleCallback(chatId, session, update.callback_query, origin);
       await saveSession(chatId, session);
