@@ -47,27 +47,28 @@ type BotSession = {
   lastDraftId: number;
 };
 
+const menuFeatures = [
+  { number: 1, label: "Status Website", action: "menu:status" },
+  { number: 2, label: "Ping / Speed Test", action: "menu:ping" },
+  { number: 3, label: "Komentar", action: "menu:comments" },
+  { number: 4, label: "Tambah Konten", action: "menu:add" },
+  { number: 5, label: "Draft", action: "menu:drafts" },
+  { number: 6, label: "Publish Draft", action: "menu:publish_drafts" },
+  { number: 7, label: "Kelola Konten", action: "menu:manage" },
+  { number: 8, label: "Database", action: "menu:database" },
+  { number: 9, label: "Batal", action: "menu:cancel" },
+  { number: 10, label: "Help", action: "menu:help" },
+];
+
 const menuRows = [
-  [
-    { text: "Status Website", callback_data: "menu:status" },
-    { text: "Komentar", callback_data: "menu:comments" },
-  ],
-  [
-    { text: "Tambah Konten", callback_data: "menu:add" },
-    { text: "Draft", callback_data: "menu:drafts" },
-  ],
-  [
-    { text: "Kelola Konten", callback_data: "menu:manage" },
-    { text: "Database", callback_data: "menu:database" },
-  ],
-  [
-    { text: "Publish Draft", callback_data: "menu:publish_drafts" },
-    { text: "Ping", callback_data: "menu:ping" },
-  ],
-  [
-    { text: "Batal", callback_data: "menu:cancel" },
-    { text: "Help", callback_data: "menu:help" },
-  ],
+  menuFeatures.slice(0, 5).map((feature) => ({
+    text: String(feature.number),
+    callback_data: `menu:number:${feature.number}`,
+  })),
+  menuFeatures.slice(5, 10).map((feature) => ({
+    text: String(feature.number),
+    callback_data: `menu:number:${feature.number}`,
+  })),
 ];
 
 function token() {
@@ -228,6 +229,16 @@ function keyboard(rows: Array<Array<{ text: string; callback_data: string }>>) {
   return { reply_markup: { inline_keyboard: rows } };
 }
 
+function menuActionFromNumber(value: string) {
+  const feature = menuFeatures.find((item) => String(item.number) === value.trim());
+  return feature?.action ?? null;
+}
+
+function normalizeMenuAction(data: string) {
+  if (!data.startsWith("menu:number:")) return data;
+  return menuActionFromNumber(data.split(":")[2] ?? "") ?? data;
+}
+
 async function sendMessage(chatId: string, session: BotSession, text: string, extra = {}) {
   const message = await telegram("sendMessage", {
     chat_id: chatId,
@@ -251,12 +262,23 @@ async function sendPhoto(chatId: string, session: BotSession, photo: string, cap
 }
 
 function menuText() {
+  const lines = menuFeatures.map((feature) => {
+    const number = String(feature.number).padStart(2, " ");
+    return `| ${number} | ${feature.label}`;
+  });
+
   return [
-    "<b>Halo, saya Depoizon.</b>",
-    "",
+    "<b>DEPOIZON ADMIN</b>",
     "Saya depoizon asisten monitoring yang siap untuk membantu kamu.",
     "",
-    "Pilih menu di bawah untuk monitoring website, komentar, tambah konten, draft, database, dan kelola konten.",
+    "<pre>",
+    "+----[ MENU FITUR ]----+",
+    "| Page 1/1 - Total 10  |",
+    "+----------------------+",
+    ...lines,
+    "+----------------------+",
+    "</pre>",
+    "<i>Pilih nomor fitur lewat tombol di bawah.</i>",
   ].join("\n");
 }
 
@@ -641,7 +663,7 @@ async function handleEditInput(chatId: string, session: BotSession, text?: strin
 }
 
 async function handleCallback(chatId: string, session: BotSession, callback: TelegramCallbackQuery, origin: string) {
-  const data = callback.data ?? "";
+  const data = normalizeMenuAction(callback.data ?? "");
   await safeTelegram("answerCallbackQuery", { callback_query_id: callback.id });
   await animateAndDelete(chatId, callback.message?.message_id);
   await deleteTracked(chatId, session, callback.message?.message_id);
@@ -742,6 +764,57 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
   }
 }
 
+async function handleMenuAction(chatId: string, session: BotSession, origin: string, action: string) {
+  if (action === "menu:home") {
+    session.flow = null;
+    await sendMenu(chatId, session, origin);
+    return true;
+  }
+  if (action === "menu:status") {
+    await showStatus(chatId, session, origin);
+    return true;
+  }
+  if (action === "menu:comments") {
+    await showComments(chatId, session, origin);
+    return true;
+  }
+  if (action === "menu:database") {
+    await showDatabase(chatId, session, origin);
+    return true;
+  }
+  if (action === "menu:ping") {
+    await showSpeedTest(chatId, session, origin);
+    return true;
+  }
+  if (action === "menu:help") {
+    await sendMenu(chatId, session, origin, helpText());
+    return true;
+  }
+  if (action === "menu:cancel") {
+    session.flow = null;
+    await sendMenu(chatId, session, origin, "Proses dibatalkan.");
+    return true;
+  }
+  if (action === "menu:add") {
+    session.flow = { type: "add", step: "title", data: {} };
+    await sendMenu(chatId, session, origin, "<b>Tambah Konten</b>\nMasukkan judul konten:");
+    return true;
+  }
+  if (action === "menu:drafts" || action === "menu:publish_drafts") {
+    const rows = session.drafts.map((draft) => [{ text: `Publish #${draft.id} - ${draft.title.slice(0, 24)}`, callback_data: `draft:publish:${draft.id}` }]);
+    rows.push([{ text: "Menu Utama", callback_data: "menu:home" }]);
+    await sendMenu(chatId, session, origin, session.drafts.length ? "<b>Draft Lokal Bot</b>\nPilih draft untuk publish." : "<b>Draft Lokal Bot</b>\nBelum ada draft.");
+    if (session.drafts.length) await sendMessage(chatId, session, "Pilih draft:", keyboard(rows));
+    return true;
+  }
+  if (action === "menu:manage") {
+    await showManage(chatId, session);
+    return true;
+  }
+
+  return false;
+}
+
 function helpText() {
   return [
     "<b>Daftar Command</b>",
@@ -807,6 +880,15 @@ export async function POST(request: Request) {
     }
 
     if (text && !text.startsWith("/") && await handleAddText(chatId, session, text)) {
+      await saveSession(chatId, session);
+      return NextResponse.json({ ok: true });
+    }
+
+    const numberedMenuAction = text && !text.startsWith("/") ? menuActionFromNumber(text) : null;
+    if (numberedMenuAction) {
+      await deleteTracked(chatId, session);
+      await safeTelegram("deleteMessage", { chat_id: chatId, message_id: incomingMessageId(update) });
+      await handleMenuAction(chatId, session, origin, numberedMenuAction);
       await saveSession(chatId, session);
       return NextResponse.json({ ok: true });
     }
