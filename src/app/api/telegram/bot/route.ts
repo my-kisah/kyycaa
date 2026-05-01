@@ -120,6 +120,20 @@ function formatBytes(bytes: number) {
   return `${size.toFixed(size >= 10 ? 1 : 2)} ${units[unit]}`;
 }
 
+async function getDatabaseStorageInfo() {
+  const sizeResult = await prisma.$queryRawUnsafe<Array<{ size: bigint }>>("select pg_database_size(current_database()) as size").catch(() => []);
+  const sizeBytes = Number(sizeResult[0]?.size ?? 0);
+  const limitMb = Number(process.env.DATABASE_STORAGE_LIMIT_MB || 500);
+  const limitBytes = limitMb * 1024 * 1024;
+  const usagePercent = limitBytes > 0 ? (sizeBytes / limitBytes) * 100 : 0;
+
+  return {
+    sizeBytes,
+    limitMb,
+    usagePercent,
+  };
+}
+
 async function timed<T>(task: () => Promise<T>) {
   const started = Date.now();
   const result = await task();
@@ -406,6 +420,7 @@ async function showStatus(chatId: string, session: BotSession, origin: string) {
   const usedMemory = totalMemory - freeMemory;
   const load = os.loadavg()[0] ?? 0;
   const cpuCount = os.cpus().length || 1;
+  const databaseStorage = await getDatabaseStorageInfo();
 
   await sendMenu(chatId, session, origin, [
     "<b>Status Website</b>",
@@ -419,7 +434,9 @@ async function showStatus(chatId: string, session: BotSession, origin: string) {
     `Uptime proses: ${formatDuration(process.uptime())}`,
     `RAM: ${formatBytes(usedMemory)} / ${formatBytes(totalMemory)} terpakai`,
     `CPU: ${cpuCount} core, load ${load.toFixed(2)}`,
-    "Storage: dikelola Vercel",
+    `Storage database: ${formatBytes(databaseStorage.sizeBytes)} / ${databaseStorage.limitMb} MB terpakai`,
+    `Pemakaian storage: ${databaseStorage.usagePercent.toFixed(2)}%`,
+    "Storage server: dikelola Vercel",
   ].join("\n"));
 }
 
@@ -448,10 +465,7 @@ async function showSpeedTest(chatId: string, session: BotSession, origin: string
 }
 
 async function showDatabase(chatId: string, session: BotSession, origin: string) {
-  const sizeResult = await prisma.$queryRawUnsafe<Array<{ size: bigint }>>("select pg_database_size(current_database()) as size").catch(() => []);
-  const sizeBytes = Number(sizeResult[0]?.size ?? 0);
-  const limitMb = Number(process.env.DATABASE_STORAGE_LIMIT_MB || 500);
-  const usedMb = sizeBytes / 1024 / 1024;
+  const databaseStorage = await getDatabaseStorageInfo();
   const [totalContents, activeContents, hiddenContents, comments, users, admins, views] = await Promise.all([
     prisma.activity.count(),
     prisma.activity.count({ where: { status: ActivityStatus.ACTIVE } }),
@@ -466,9 +480,9 @@ async function showDatabase(chatId: string, session: BotSession, origin: string)
     "<b>Status Database</b>",
     "",
     "Provider: postgresql",
-    `Storage terpakai: ${usedMb.toFixed(1)} MB`,
-    `Limit maksimal: ${limitMb} MB`,
-    `Pemakaian: ${((usedMb / limitMb) * 100).toFixed(2)}%`,
+    `Storage terpakai: ${formatBytes(databaseStorage.sizeBytes)}`,
+    `Limit maksimal: ${databaseStorage.limitMb} MB`,
+    `Pemakaian: ${databaseStorage.usagePercent.toFixed(2)}%`,
     `Total konten: ${totalContents}`,
     `Konten aktif: ${activeContents}`,
     `Konten hidden/arsip: ${hiddenContents}`,
