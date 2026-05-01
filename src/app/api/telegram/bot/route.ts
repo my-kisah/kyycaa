@@ -164,6 +164,20 @@ async function telegram(method: string, payload: Record<string, unknown>) {
   return data.result;
 }
 
+async function telegramForm(method: string, formData: FormData) {
+  const response = await fetch(apiUrl(method), {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.description ?? `Telegram ${method} gagal.`);
+  }
+
+  return data.result;
+}
+
 async function safeTelegram(method: string, payload: Record<string, unknown>) {
   try {
     return await telegram(method, payload);
@@ -255,15 +269,55 @@ async function sendMessage(chatId: string, session: BotSession, text: string, ex
   track(session, message);
 }
 
+function dataImageToBlob(dataUrl: string) {
+  const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
+  if (!match) return null;
+
+  const extension = match[1].split("/")[1].replace("jpeg", "jpg");
+  return {
+    blob: new Blob([Buffer.from(match[2], "base64")], { type: match[1] }),
+    filename: `content-preview.${extension}`,
+  };
+}
+
 async function sendPhoto(chatId: string, session: BotSession, photo: string, caption: string, extra = {}) {
-  const message = await telegram("sendPhoto", {
-    chat_id: chatId,
-    photo,
-    caption: truncate(caption, 950),
-    parse_mode: "HTML",
-    ...extra,
-  });
-  track(session, message);
+  const normalizedPhoto = String(photo || "").trim();
+  const finalCaption = truncate(caption, 950);
+
+  try {
+    if (normalizedPhoto.startsWith("data:image/")) {
+      const input = dataImageToBlob(normalizedPhoto);
+      if (!input) throw new Error("Format data image tidak valid.");
+
+      const formData = new FormData();
+      formData.set("chat_id", chatId);
+      formData.set("photo", input.blob, input.filename);
+      formData.set("caption", finalCaption);
+      formData.set("parse_mode", "HTML");
+      Object.entries(extra as Record<string, unknown>).forEach(([key, value]) => {
+        formData.set(key, typeof value === "string" ? value : JSON.stringify(value));
+      });
+
+      const message = await telegramForm("sendPhoto", formData);
+      track(session, message);
+      return;
+    }
+
+    if (!normalizedPhoto) {
+      throw new Error("Foto kosong.");
+    }
+
+    const message = await telegram("sendPhoto", {
+      chat_id: chatId,
+      photo: normalizedPhoto,
+      caption: finalCaption,
+      parse_mode: "HTML",
+      ...extra,
+    });
+    track(session, message);
+  } catch {
+    await sendMessage(chatId, session, caption, extra);
+  }
 }
 
 function menuText() {
