@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import os from "node:os";
 import { ActivityStatus, Role } from "@prisma/client";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
@@ -97,6 +98,35 @@ function escapeHtml(value: unknown) {
 
 function truncate(value: string, length = 420) {
   return value.length > length ? `${value.slice(0, length - 3)}...` : value;
+}
+
+function formatDuration(totalSeconds: number) {
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${days ? `${days} hari ` : ""}${hours} jam ${minutes} menit`;
+}
+
+function formatBytes(bytes: number) {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = bytes;
+  let unit = 0;
+
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+
+  return `${size.toFixed(size >= 10 ? 1 : 2)} ${units[unit]}`;
+}
+
+async function timed<T>(task: () => Promise<T>) {
+  const started = Date.now();
+  const result = await task();
+  return {
+    result,
+    ms: Date.now() - started,
+  };
 }
 
 async function telegram(method: string, payload: Record<string, unknown>) {
@@ -370,16 +400,50 @@ function contentCaption(content: {
 }
 
 async function showStatus(chatId: string, session: BotSession, origin: string) {
-  const started = Date.now();
-  const response = await fetch(origin, { cache: "no-store" });
-  const ms = Date.now() - started;
+  const { result: response, ms } = await timed(() => fetch(origin, { cache: "no-store" }));
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  const usedMemory = totalMemory - freeMemory;
+  const load = os.loadavg()[0] ?? 0;
+  const cpuCount = os.cpus().length || 1;
+
   await sendMenu(chatId, session, origin, [
     "<b>Status Website</b>",
-    "",
     `URL: ${escapeHtml(origin)}`,
+    `Status: ${response.ok ? "ONLINE" : "BERMASALAH"}`,
     `HTTP: ${response.status}`,
     `Response time: ${ms} ms`,
-    `Status: ${response.ok ? "Online" : "Bermasalah"}`,
+    "",
+    "<b>Server Bot</b>",
+    `Uptime OS: ${formatDuration(os.uptime())}`,
+    `Uptime proses: ${formatDuration(process.uptime())}`,
+    `RAM: ${formatBytes(usedMemory)} / ${formatBytes(totalMemory)} terpakai`,
+    `CPU: ${cpuCount} core, load ${load.toFixed(2)}`,
+    "Storage: dikelola Vercel",
+  ].join("\n"));
+}
+
+async function showSpeedTest(chatId: string, session: BotSession, origin: string) {
+  const website = await timed(() => fetch(origin, { cache: "no-store" }));
+  const database = await timed(() => prisma.$queryRawUnsafe("select 1"));
+  const telegramApi = await timed(() => telegram("getMe", {}));
+  const download = await timed(async () => {
+    const response = await fetch(`${origin}/depoizon-menu.jpg?speed=${Date.now()}`, { cache: "no-store" });
+    return response.arrayBuffer();
+  });
+  const bytes = download.result.byteLength;
+  const mbps = download.ms > 0 ? (bytes * 8) / (download.ms / 1000) / 1_000_000 : 0;
+
+  await sendMenu(chatId, session, origin, [
+    "<b>Speed Test Bot</b>",
+    "",
+    `Website latency: ${website.ms} ms`,
+    `Telegram API latency: ${telegramApi.ms} ms`,
+    `Database latency: ${database.ms} ms`,
+    `Download test: ${formatBytes(bytes)} dalam ${download.ms} ms`,
+    `Estimasi speed: ${mbps.toFixed(2)} Mbps`,
+    "",
+    `Status: ${website.result.ok ? "ONLINE" : "BERMASALAH"}`,
   ].join("\n"));
 }
 
@@ -576,7 +640,7 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
   if (data === "menu:status") return showStatus(chatId, session, origin);
   if (data === "menu:comments") return showComments(chatId, session, origin);
   if (data === "menu:database") return showDatabase(chatId, session, origin);
-  if (data === "menu:ping") return sendMenu(chatId, session, origin, "pong");
+  if (data === "menu:ping") return showSpeedTest(chatId, session, origin);
   if (data === "menu:help") return sendMenu(chatId, session, origin, helpText());
   if (data === "menu:cancel") {
     session.flow = null;
@@ -739,7 +803,7 @@ export async function POST(request: Request) {
       const command = text.split(/\s+/)[0];
       if (command === "/start") await sendMenu(chatId, session, origin);
       else if (command === "/help") await sendMenu(chatId, session, origin, helpText());
-      else if (command === "/ping") await sendMenu(chatId, session, origin, "pong");
+      else if (command === "/ping") await showSpeedTest(chatId, session, origin);
       else if (command === "/status") await showStatus(chatId, session, origin);
       else if (command === "/komentar") await showComments(chatId, session, origin);
       else if (command === "/tambah") {
