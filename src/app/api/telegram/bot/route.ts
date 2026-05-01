@@ -56,20 +56,25 @@ const menuFeatures = [
   { number: 6, label: "Publish Draft", action: "menu:publish_drafts" },
   { number: 7, label: "Kelola Konten", action: "menu:manage" },
   { number: 8, label: "Database", action: "menu:database" },
-  { number: 9, label: "Batal", action: "menu:cancel" },
-  { number: 10, label: "Help", action: "menu:help" },
+  { number: 9, label: "Help", action: "menu:help" },
 ];
 
 const menuRows = [
-  menuFeatures.slice(0, 5).map((feature) => ({
+  menuFeatures.slice(0, 3).map((feature) => ({
     text: String(feature.number),
     callback_data: `menu:number:${feature.number}`,
   })),
-  menuFeatures.slice(5, 10).map((feature) => ({
+  menuFeatures.slice(3, 6).map((feature) => ({
+    text: String(feature.number),
+    callback_data: `menu:number:${feature.number}`,
+  })),
+  menuFeatures.slice(6, 9).map((feature) => ({
     text: String(feature.number),
     callback_data: `menu:number:${feature.number}`,
   })),
 ];
+
+const backToMenuRows = [[{ text: "Kembali ke List Menu", callback_data: "menu:home" }]];
 
 function token() {
   const value = process.env.TELEGRAM_BOT_TOKEN;
@@ -273,7 +278,7 @@ function menuText() {
     "",
     "<pre>",
     "+----[ MENU FITUR ]----+",
-    "| Page 1/1 - Total 10  |",
+    "| Page 1/1 - Total 9   |",
     "+----------------------+",
     ...lines,
     "+----------------------+",
@@ -282,8 +287,17 @@ function menuText() {
   ].join("\n");
 }
 
-async function sendMenu(chatId: string, session: BotSession, origin: string, caption = menuText()) {
-  await sendPhoto(chatId, session, `${origin}/depoizon-menu.jpg`, caption, keyboard(menuRows));
+async function sendMenu(
+  chatId: string,
+  session: BotSession,
+  origin: string,
+  caption?: string,
+  rows?: Array<Array<{ text: string; callback_data: string }>>,
+) {
+  const finalCaption = caption ?? menuText();
+  const finalRows = rows ?? (caption ? backToMenuRows : menuRows);
+
+  await sendPhoto(chatId, session, `${origin}/depoizon-menu.jpg`, finalCaption, keyboard(finalRows));
 }
 
 function isAdmin(update: TelegramUpdate) {
