@@ -33,7 +33,7 @@ type BotSession = {
   trackedMessageIds: number[];
   flow?: {
     type: "add" | "edit";
-    step: "title" | "category" | "photo" | "body" | "preview" | "editField";
+    step: "title" | "category" | "dateYear" | "dateMonth" | "dateDay" | "dateHour" | "photo" | "body" | "preview" | "editField";
     data: Record<string, unknown>;
   } | null;
   drafts: Array<{
@@ -42,6 +42,7 @@ type BotSession = {
     category: string;
     body: string;
     photo: Record<string, unknown>;
+    date?: string;
     createdAt: string;
   }>;
   lastDraftId: number;
@@ -248,6 +249,83 @@ function keyboard(rows: Array<Array<{ text: string; callback_data: string }>>) {
   return { reply_markup: { inline_keyboard: rows } };
 }
 
+function chunkRows<T>(items: T[], size: number, map: (item: T) => { text: string; callback_data: string }) {
+  const rows: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (let index = 0; index < items.length; index += size) {
+    rows.push(items.slice(index, index + size).map(map));
+  }
+  return rows;
+}
+
+function dateParts(flow: NonNullable<BotSession["flow"]>) {
+  const parts = (flow.data.dateParts ?? {}) as Record<string, number>;
+  return parts;
+}
+
+function selectedDateText(parts: Record<string, number>) {
+  const year = parts.year ? String(parts.year) : "----";
+  const month = parts.month ? String(parts.month).padStart(2, "0") : "--";
+  const day = parts.day ? String(parts.day).padStart(2, "0") : "--";
+  const hour = parts.hour !== undefined ? String(parts.hour).padStart(2, "0") : "--";
+  return `${year}-${month}-${day} ${hour}:00 WIB`;
+}
+
+function buildSelectedDate(parts: Record<string, number>) {
+  if (!parts.year || !parts.month || !parts.day || parts.hour === undefined) return null;
+  return new Date(`${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}T${String(parts.hour).padStart(2, "0")}:00:00+07:00`);
+}
+
+function dateKeyboard(step: "dateYear" | "dateMonth" | "dateDay" | "dateHour", flow: NonNullable<BotSession["flow"]>) {
+  const parts = dateParts(flow);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  if (step === "dateYear") {
+    return keyboard(chunkRows([currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2], 3, (year) => ({
+      text: String(year),
+      callback_data: `date:year:${year}`,
+    })));
+  }
+
+  if (step === "dateMonth") {
+    return keyboard(chunkRows(Array.from({ length: 12 }, (_, index) => index + 1), 4, (month) => ({
+      text: String(month).padStart(2, "0"),
+      callback_data: `date:month:${month}`,
+    })));
+  }
+
+  if (step === "dateDay") {
+    const days = new Date(parts.year, parts.month, 0).getDate();
+    return keyboard(chunkRows(Array.from({ length: days }, (_, index) => index + 1), 7, (day) => ({
+      text: String(day).padStart(2, "0"),
+      callback_data: `date:day:${day}`,
+    })));
+  }
+
+  return keyboard(chunkRows(Array.from({ length: 24 }, (_, index) => index), 6, (hour) => ({
+    text: `${String(hour).padStart(2, "0")}:00`,
+    callback_data: `date:hour:${hour}`,
+  })));
+}
+
+async function askDatePart(chatId: string, session: BotSession, step: "dateYear" | "dateMonth" | "dateDay" | "dateHour") {
+  const flow = session.flow;
+  if (!flow) return;
+
+  const labels = {
+    dateYear: "Pilih tahun konten:",
+    dateMonth: "Pilih bulan konten:",
+    dateDay: "Pilih tanggal konten:",
+    dateHour: "Pilih jam konten:",
+  };
+
+  flow.step = step;
+  await sendMessage(chatId, session, [
+    `<b>${labels[step]}</b>`,
+    `Tanggal sementara: ${escapeHtml(selectedDateText(dateParts(flow)))}`,
+  ].join("\n"), dateKeyboard(step, flow));
+}
+
 function menuActionFromNumber(value: string) {
   const feature = menuFeatures.find((item) => String(item.number) === value.trim());
   return feature?.action ?? null;
@@ -434,6 +512,7 @@ async function publishContent(data: Record<string, unknown>) {
   const category = String(data.category ?? "").trim();
   const body = String(data.body ?? "").trim();
   const photo = data.photo as Record<string, unknown>;
+  const date = data.date ? new Date(String(data.date)) : new Date();
   const image = await resolveImage(photo);
   const slug = await createUniqueSlug(title);
   const excerpt = body.length > 160 ? `${body.slice(0, 157)}...` : body;
@@ -445,7 +524,7 @@ async function publishContent(data: Record<string, unknown>) {
       excerpt,
       description: body,
       ...image,
-      date: new Date(),
+      date,
       category,
       tags: parseTags("telegram"),
       status: ActivityStatus.ACTIVE,
@@ -464,6 +543,7 @@ async function updateContent(id: string, updates: Record<string, unknown>) {
     data.slug = await createUniqueSlug(updates.title.trim(), id);
   }
   if (typeof updates.category === "string") data.category = updates.category.trim();
+  if (typeof updates.date === "string") data.date = new Date(updates.date);
   if (typeof updates.body === "string") {
     const body = updates.body.trim();
     data.description = body;
@@ -487,6 +567,7 @@ function contentCaption(content: {
   views?: number;
   commentsCount?: number;
   slug?: string;
+  date?: Date;
 }) {
   return [
     "<b>Preview Konten Website</b>",
@@ -496,6 +577,7 @@ function contentCaption(content: {
     escapeHtml(truncate(content.excerpt || content.description || "", 420)),
     "",
     `<b>Status:</b> ${content.status === "ACTIVE" ? "Aktif" : "Hidden/Arsip"}`,
+    content.date ? `<b>Tanggal:</b> ${escapeHtml(content.date.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }))}` : "",
     `<b>Statistik:</b> ${content.views ?? 0} views | ${content.commentsCount ?? 0} komentar`,
     content.slug ? `<b>URL:</b> /memories/${escapeHtml(content.slug)}` : "",
   ]
@@ -660,8 +742,12 @@ async function handleAddText(chatId: string, session: BotSession, text: string) 
   }
   if (flow.step === "category") {
     flow.data.category = text;
-    flow.step = "photo";
-    await sendMessage(chatId, session, "Kirim foto konten sebagai upload Telegram, atau kirim link gambar http/https.");
+    flow.data.dateParts = {};
+    await askDatePart(chatId, session, "dateYear");
+    return true;
+  }
+  if (["dateYear", "dateMonth", "dateDay", "dateHour"].includes(flow.step)) {
+    await sendMessage(chatId, session, "Pilih tanggal dan jam menggunakan tombol yang tersedia.");
     return true;
   }
   if (flow.step === "photo") {
@@ -683,6 +769,7 @@ async function handleAddText(chatId: string, session: BotSession, text: string) 
       "",
       `# ${escapeHtml(flow.data.category)}`,
       `<b>${escapeHtml(flow.data.title)}</b>`,
+      `Tanggal: ${escapeHtml(new Date(String(flow.data.date)).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }))}`,
       escapeHtml(truncate(text, 650)),
       "",
       "Pilih aksi di bawah:",
@@ -723,6 +810,11 @@ async function handleEditInput(chatId: string, session: BotSession, text?: strin
     return true;
   }
 
+  if (field === "date") {
+    await sendMessage(chatId, session, "Pilih tanggal dan jam menggunakan tombol yang tersedia.");
+    return true;
+  }
+
   if (!text) return false;
   const content = await updateContent(contentId, { [field === "body" ? "body" : field]: text });
   session.flow = null;
@@ -735,6 +827,10 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
   await safeTelegram("answerCallbackQuery", { callback_query_id: callback.id });
   await animateAndDelete(chatId, callback.message?.message_id);
   await deleteTracked(chatId, session, callback.message?.message_id);
+
+  if (data.startsWith("date:")) {
+    return handleDateCallback(chatId, session, data);
+  }
 
   if (data === "menu:home") {
     session.flow = null;
@@ -765,9 +861,9 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
   if (data === "menu:manage") return showManage(chatId, session);
   if (data === "add:save_draft") {
     const flow = session.flow;
-    if (!flow?.data.title || !flow.data.category || !flow.data.body || !flow.data.photo) return sendMenu(chatId, session, origin, "Konten belum lengkap.");
+    if (!flow?.data.title || !flow.data.category || !flow.data.date || !flow.data.body || !flow.data.photo) return sendMenu(chatId, session, origin, "Konten belum lengkap.");
     session.lastDraftId += 1;
-    session.drafts.unshift({ id: session.lastDraftId, title: String(flow.data.title), category: String(flow.data.category), body: String(flow.data.body), photo: flow.data.photo as Record<string, unknown>, createdAt: new Date().toISOString() });
+    session.drafts.unshift({ id: session.lastDraftId, title: String(flow.data.title), category: String(flow.data.category), body: String(flow.data.body), photo: flow.data.photo as Record<string, unknown>, date: String(flow.data.date), createdAt: new Date().toISOString() });
     session.flow = null;
     return sendMenu(chatId, session, origin, `Draft tersimpan. ID draft: ${session.lastDraftId}`);
   }
@@ -822,13 +918,85 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
         { text: "Edit Isi", callback_data: `edit:${id}:body` },
         { text: "Edit Foto", callback_data: `edit:${id}:photo` },
       ],
+      [{ text: "Edit Tanggal", callback_data: `edit:${id}:date` }],
       [{ text: "Batal", callback_data: `content:view:${id}` }],
     ]));
   }
   if (data.startsWith("edit:")) {
     const [, id, field] = data.split(":");
+    if (field === "date") {
+      session.flow = { type: "edit", step: "dateYear", data: { contentId: id, field, dateParts: {} } };
+      return askDatePart(chatId, session, "dateYear");
+    }
+
     session.flow = { type: "edit", step: "editField", data: { contentId: id, field } };
     return sendMessage(chatId, session, field === "photo" ? "Kirim foto baru atau link gambar http/https:" : "Kirim nilai baru:");
+  }
+}
+
+async function handleDateCallback(chatId: string, session: BotSession, data: string) {
+  const flow = session.flow;
+  if (!flow || !["dateYear", "dateMonth", "dateDay", "dateHour"].includes(flow.step)) {
+    await sendMessage(chatId, session, "Sesi pilih tanggal sudah tidak aktif.", keyboard(backToMenuRows));
+    return;
+  }
+
+  const [, part, rawValue] = data.split(":");
+  const value = Number(rawValue);
+  const parts = dateParts(flow);
+
+  if (!Number.isInteger(value)) {
+    await sendMessage(chatId, session, "Pilihan tanggal tidak valid.");
+    return;
+  }
+
+  if (part === "year") {
+    parts.year = value;
+    flow.data.dateParts = parts;
+    await askDatePart(chatId, session, "dateMonth");
+    return;
+  }
+
+  if (part === "month") {
+    parts.month = value;
+    flow.data.dateParts = parts;
+    await askDatePart(chatId, session, "dateDay");
+    return;
+  }
+
+  if (part === "day") {
+    parts.day = value;
+    flow.data.dateParts = parts;
+    await askDatePart(chatId, session, "dateHour");
+    return;
+  }
+
+  if (part === "hour") {
+    parts.hour = value;
+    flow.data.dateParts = parts;
+    const selected = buildSelectedDate(parts);
+    if (!selected) {
+      await askDatePart(chatId, session, "dateYear");
+      return;
+    }
+
+    flow.data.date = selected.toISOString();
+
+    if (flow.type === "edit") {
+      const contentId = String(flow.data.contentId);
+      const content = await updateContent(contentId, { date: flow.data.date });
+      session.flow = null;
+      await showContent(chatId, session, content.id);
+      return;
+    }
+
+    flow.step = "photo";
+    await sendMessage(chatId, session, [
+      "<b>Tanggal konten dipilih.</b>",
+      `Tanggal: ${escapeHtml(selected.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }))}`,
+      "",
+      "Kirim foto konten sebagai upload Telegram, atau kirim link gambar http/https.",
+    ].join("\n"));
   }
 }
 
