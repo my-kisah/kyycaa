@@ -279,6 +279,20 @@ function dateKeyboard(step: "dateYear" | "dateMonth" | "dateDay" | "dateHour", f
   const parts = dateParts(flow);
   const now = new Date();
   const currentYear = now.getFullYear();
+  const monthNames = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
   const withCancel = (rows: Array<Array<{ text: string; callback_data: string }>>) => [
     ...rows,
     [{ text: "Batalkan", callback_data: "date:cancel" }],
@@ -292,8 +306,8 @@ function dateKeyboard(step: "dateYear" | "dateMonth" | "dateDay" | "dateHour", f
   }
 
   if (step === "dateMonth") {
-    return keyboard(withCancel(chunkRows(Array.from({ length: 12 }, (_, index) => index + 1), 4, (month) => ({
-      text: String(month).padStart(2, "0"),
+    return keyboard(withCancel(chunkRows(Array.from({ length: 12 }, (_, index) => index + 1), 2, (month) => ({
+      text: monthNames[month - 1],
       callback_data: `date:month:${month}`,
     }))));
   }
