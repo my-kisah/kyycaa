@@ -279,33 +279,37 @@ function dateKeyboard(step: "dateYear" | "dateMonth" | "dateDay" | "dateHour", f
   const parts = dateParts(flow);
   const now = new Date();
   const currentYear = now.getFullYear();
+  const withCancel = (rows: Array<Array<{ text: string; callback_data: string }>>) => [
+    ...rows,
+    [{ text: "Batalkan", callback_data: "date:cancel" }],
+  ];
 
   if (step === "dateYear") {
-    return keyboard(chunkRows(Array.from({ length: currentYear - 2021 + 1 }, (_, index) => 2021 + index), 3, (year) => ({
+    return keyboard(withCancel(chunkRows(Array.from({ length: currentYear - 2021 + 1 }, (_, index) => 2021 + index), 3, (year) => ({
       text: String(year),
       callback_data: `date:year:${year}`,
-    })));
+    }))));
   }
 
   if (step === "dateMonth") {
-    return keyboard(chunkRows(Array.from({ length: 12 }, (_, index) => index + 1), 4, (month) => ({
+    return keyboard(withCancel(chunkRows(Array.from({ length: 12 }, (_, index) => index + 1), 4, (month) => ({
       text: String(month).padStart(2, "0"),
       callback_data: `date:month:${month}`,
-    })));
+    }))));
   }
 
   if (step === "dateDay") {
     const days = new Date(parts.year, parts.month, 0).getDate();
-    return keyboard(chunkRows(Array.from({ length: days }, (_, index) => index + 1), 7, (day) => ({
+    return keyboard(withCancel(chunkRows(Array.from({ length: days }, (_, index) => index + 1), 7, (day) => ({
       text: String(day).padStart(2, "0"),
       callback_data: `date:day:${day}`,
-    })));
+    }))));
   }
 
-  return keyboard(chunkRows(Array.from({ length: 24 }, (_, index) => index), 6, (hour) => ({
+  return keyboard(withCancel(chunkRows(Array.from({ length: 24 }, (_, index) => index), 6, (hour) => ({
     text: `${String(hour).padStart(2, "0")}:00`,
     callback_data: `date:hour:${hour}`,
-  })));
+  }))));
 }
 
 async function askDatePart(chatId: string, session: BotSession, step: "dateYear" | "dateMonth" | "dateDay" | "dateHour") {
@@ -935,6 +939,12 @@ async function handleCallback(chatId: string, session: BotSession, callback: Tel
 }
 
 async function handleDateCallback(chatId: string, session: BotSession, data: string) {
+  if (data === "date:cancel") {
+    session.flow = null;
+    await sendMenu(chatId, session, process.env.NEXT_PUBLIC_APP_URL || "https://kisah.depoizon.my.id", "Pemilihan tanggal dibatalkan.");
+    return;
+  }
+
   const flow = session.flow;
   if (!flow || !["dateYear", "dateMonth", "dateDay", "dateHour"].includes(flow.step)) {
     await sendMessage(chatId, session, "Sesi pilih tanggal sudah tidak aktif.", keyboard(backToMenuRows));
