@@ -281,7 +281,7 @@ function dateKeyboard(step: "dateYear" | "dateMonth" | "dateDay" | "dateHour", f
   const currentYear = now.getFullYear();
 
   if (step === "dateYear") {
-    return keyboard(chunkRows([currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2], 3, (year) => ({
+    return keyboard(chunkRows(Array.from({ length: currentYear - 2021 + 1 }, (_, index) => 2021 + index), 3, (year) => ({
       text: String(year),
       callback_data: `date:year:${year}`,
     })));
